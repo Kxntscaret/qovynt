@@ -1,4 +1,4 @@
-// QOVYNT Main Application Controller with Real Auth & Modern Decision Dialogs
+// QOVYNT Main Application Controller
 import { state } from './state.js';
 import { auth } from './auth.js';
 import { db } from './db.js';
@@ -102,6 +102,31 @@ class Application {
 
     const view = state.currentView;
 
+    // Completely Hide Header and Sidebar on Login page (User request: หน้า login ไม่ต้องมีพวกนี้)
+    const sidebar = document.getElementById('sidebar');
+    const header = document.querySelector('header');
+    const mainWrap = this.viewContainer.parentElement;
+
+    if (view === 'auth') {
+      if (sidebar) sidebar.style.display = 'none';
+      if (header) header.style.display = 'none';
+      this.viewContainer.classList.remove('max-w-7xl', 'px-4', 'sm:px-8', 'py-6');
+      this.viewContainer.classList.add('p-0');
+      if (mainWrap) {
+        mainWrap.classList.remove('flex-1');
+        mainWrap.classList.add('w-full');
+      }
+    } else {
+      if (sidebar) sidebar.style.display = '';
+      if (header) header.style.display = '';
+      this.viewContainer.classList.add('max-w-7xl', 'px-4', 'sm:px-8', 'py-6');
+      this.viewContainer.classList.remove('p-0');
+      if (mainWrap) {
+        mainWrap.classList.add('flex-1');
+        mainWrap.classList.remove('w-full');
+      }
+    }
+
     // Trigger smooth fade-in entrance
     this.viewContainer.classList.remove('animate-fade-in');
     void this.viewContainer.offsetWidth;
@@ -116,15 +141,6 @@ class Application {
         el.classList.remove('active');
       }
     });
-
-    // Toggle sidebar visibility on mobile or auth screen
-    const sidebar = document.getElementById('sidebar');
-    const header = document.querySelector('header');
-    if (view === 'auth') {
-      if (sidebar) sidebar.classList.add('lg:hidden');
-    } else {
-      if (sidebar) sidebar.classList.remove('lg:hidden');
-    }
 
     // Route rendering
     switch (view) {
@@ -178,7 +194,7 @@ class Application {
       });
     });
 
-    // Beautiful Glassmorphic Decision Dialog for Logout
+    // Glassmorphic Decision Dialog for Logout
     document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
       e.preventDefault();
       const confirmed = await showConfirmDialog({
