@@ -158,46 +158,6 @@ export function renderAuth(container) {
 
       </div>
     </div>
-
-    <!-- Custom Modern Google Sign In Modal (Replaces native browser prompt completely) -->
-    <div id="google-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
-      <div class="glass-panel p-6 sm:p-7 rounded-3xl w-full max-w-sm border border-slate-700/80 shadow-2xl animate-modal-pop relative bg-[#131528]/95">
-        <div class="text-center mb-5">
-          <div class="w-12 h-12 rounded-2xl bg-white p-2.5 mx-auto mb-3 shadow-md flex items-center justify-center">
-            <svg class="w-full h-full" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-          </div>
-          <h3 class="text-base font-bold text-white">ลงชื่อเข้าใช้ด้วย Google</h3>
-          <p class="text-xs text-slate-400 mt-1">เพื่อเข้าถึงระบบปฏิบัติการชีวิต QOVYNT</p>
-        </div>
-
-        <form id="google-login-form" class="space-y-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">อีเมลหรือหมายเลขโทรศัพท์ Google</label>
-            <input 
-              type="email" 
-              id="google-modal-email" 
-              placeholder="user@gmail.com" 
-              class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors"
-            />
-            <div id="google-email-error" class="hidden"></div>
-          </div>
-
-          <div class="flex items-center justify-end gap-2.5 pt-2">
-            <button type="button" id="btn-cancel-google" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors">
-              ยกเลิก
-            </button>
-            <button type="submit" id="btn-confirm-google" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all hover:scale-105">
-              ถัดไป
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   `;
 
   if (window.lucide) {
@@ -312,66 +272,13 @@ function bindAuthEvents(container) {
   });
 
   // Custom Google Modal Controls (Zero browser native prompt!)
-  const googleModal = container.querySelector('#google-modal');
-  const googleEmailInput = container.querySelector('#google-modal-email');
-  const googleEmailError = container.querySelector('#google-email-error');
-
-  container.querySelector('#auth-btn-google')?.addEventListener('click', () => {
+  // Direct Google Sign In Button
+  container.querySelector('#auth-btn-google')?.addEventListener('click', async () => {
     if (db.isCloudActive && db.supabase) {
-      auth.signInWithGoogle();
-      return;
+      await auth.signInWithGoogle();
+    } else {
+      showToast('ยังไม่ได้ระบุ Supabase URL & Key ใน js/config.js เพื่อเชื่อมต่อกับ Google', 'warning');
     }
-    // Show custom modal
-    if (googleModal) {
-      googleModal.classList.remove('hidden');
-      googleModal.classList.add('flex');
-      if (googleEmailInput) {
-        googleEmailInput.value = '';
-        googleEmailInput.focus();
-      }
-    }
-  });
-
-  container.querySelector('#btn-cancel-google')?.addEventListener('click', () => {
-    if (googleModal) {
-      googleModal.classList.add('hidden');
-      googleModal.classList.remove('flex');
-    }
-  });
-
-  container.querySelector('#google-login-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const gEmail = googleEmailInput.value.trim();
-    if (!gEmail || !isValidEmail(gEmail)) {
-      if (googleEmailError) {
-        googleEmailError.className = 'flex items-center gap-1.5 text-rose-400 text-[11px] font-medium mt-1.5';
-        googleEmailError.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> กรุณากรอกอีเมล Google ให้ถูกต้อง (เช่น user@gmail.com)`;
-        if (window.lucide) window.lucide.createIcons({ root: googleEmailError });
-      }
-      return;
-    }
-
-    // Process real login
-    const userName = gEmail.split('@')[0];
-    const googleUser = {
-      id: 'google_' + btoa(gEmail).replace(/=/g, '').toLowerCase(),
-      name: userName.charAt(0).toUpperCase() + userName.slice(1),
-      email: gEmail.toLowerCase(),
-      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(gEmail)}`,
-      provider: 'google',
-      createdAt: new Date().toISOString()
-    };
-
-    auth.currentUser = googleUser;
-    localStorage.setItem('qovynt_session', JSON.stringify(googleUser));
-    auth._saveUserToDirectory(googleUser);
-
-    googleModal.classList.add('hidden');
-    googleModal.classList.remove('flex');
-
-    showToast(`เข้าสู่ระบบด้วย Google สำเร็จ! สวัสดีคุณ ${googleUser.name}`, 'success');
-    auth.notify();
-    state.setView('overview');
   });
 
   // Form Submit
