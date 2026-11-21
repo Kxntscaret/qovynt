@@ -7,10 +7,22 @@ let financeDetailChart = null;
 let currentFilterType = 'all';
 let currentSearch = '';
 let currentCategory = 'all';
+let selectedDateFilter = null; // 'YYYY-MM-DD' or null for all
+
+// Allow external modules to set a date filter and navigate here
+export function filterFinanceByDate(dateStr) {
+  selectedDateFilter = dateStr;
+  state.setView('finance');
+}
 
 export function renderFinance(container) {
   const metrics = state.getFinancialMetrics();
   let txs = state.data.transactions;
+
+  // Date filter from calendar click
+  if (selectedDateFilter) {
+    txs = txs.filter(t => t.date && t.date.startsWith(selectedDateFilter));
+  }
 
   if (currentFilterType !== 'all') {
     txs = txs.filter(t => t.type === currentFilterType);
@@ -46,6 +58,17 @@ export function renderFinance(container) {
           </button>
         </div>
       </div>
+
+      ${selectedDateFilter ? `
+      <!-- Date Filter Banner -->
+      <div class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-purple-600/15 border border-purple-500/30 text-sm stagger-item stagger-1">
+        <i data-lucide="calendar-days" class="w-4 h-4 text-purple-400 shrink-0"></i>
+        <span class="text-purple-200">กรองรายการวันที่: <strong class="text-white">${new Date(selectedDateFilter).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</strong></span>
+        <button id="btn-clear-date-filter" class="ml-auto flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-slate-700/50">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i> ล้างตัวกรอง
+        </button>
+      </div>
+      ` : ''}
 
       <!-- Financial Metrics Summary Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -304,6 +327,12 @@ function initFinanceCharts() {
 }
 
 function bindFinanceEvents(container) {
+  // Clear date filter (from calendar navigation)
+  container.querySelector('#btn-clear-date-filter')?.addEventListener('click', () => {
+    selectedDateFilter = null;
+    renderFinance(container);
+  });
+
   container.querySelector('#btn-add-tx')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('open-modal', { detail: { modal: 'add-transaction' } }));
   });

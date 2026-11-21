@@ -1,12 +1,84 @@
 // 1. Overview Page View - Faithful, high-fidelity implementation with 7 Core Animations
 import { state } from '../state.js';
 import { formatMoney, formatThaiDateShort, formatThaiDateTime, triggerConfetti, animateCounter } from '../utils.js';
+import { filterFinanceByDate } from './finance.js';
 
 let financeLineChart = null;
 let expenseDonutChart = null;
 let currentTxTab = 'all';
 let miniCalViewMonth = new Date().getMonth();
 let miniCalViewYear = new Date().getFullYear();
+
+// --- Sparkline & Percentage Helpers ---
+
+// Generate a smooth SVG bezier path string from an array of values
+function buildSparklinePath(values) {
+  if (!values || values.length === 0 || values.every(v => v === 0)) {
+    return 'M 5 15 L 95 15';
+  }
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || max || 1;
+  const W = 90, H = 20, padX = 5, padY = 3;
+  const pts = values.map((v, i) => {
+    const x = padX + (i / (values.length - 1)) * (W - padX * 2);
+    const y = H - padY - ((v - min) / range) * (H - padY * 2);
+    return { x, y };
+  });
+  let path = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i];
+    const p1 = pts[i + 1];
+    const mx = (p0.x + p1.x) / 2;
+    path += ` C ${mx.toFixed(1)} ${p0.y.toFixed(1)}, ${mx.toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+  }
+  return path;
+}
+
+// Calculate monthly income/expense totals and week-by-week sparkline points
+function calcSparklineData() {
+  const txs = state.data.transactions || [];
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+  const lastYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+  // Weekly buckets for sparkline (4 weeks this month)
+  const incomeWeeks = [0, 0, 0, 0];
+  const expenseWeeks = [0, 0, 0, 0];
+  let incomeThisMonth = 0, expenseThisMonth = 0;
+  let incomeLastMonth = 0, expenseLastMonth = 0;
+
+  txs.forEach(t => {
+    const d = new Date(t.date);
+    if (isNaN(d)) return;
+    const amt = Number(t.amount) || 0;
+    if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
+      const week = Math.min(3, Math.floor((d.getDate() - 1) / 7));
+      if (t.type === 'income') { incomeWeeks[week] += amt; incomeThisMonth += amt; }
+      else { expenseWeeks[week] += amt; expenseThisMonth += amt; }
+    } else if (d.getMonth() === lastMonth && d.getFullYear() === lastYear) {
+      if (t.type === 'income') incomeLastMonth += amt;
+      else expenseLastMonth += amt;
+    }
+  });
+
+  // % change vs last month
+  const incomeChange = incomeLastMonth > 0
+    ? Math.round(((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100)
+    : (incomeThisMonth > 0 ? 100 : 0);
+  const expenseChange = expenseLastMonth > 0
+    ? Math.round(((expenseThisMonth - expenseLastMonth) / expenseLastMonth) * 100)
+    : (expenseThisMonth > 0 ? 100 : 0);
+
+  return {
+    incomeWeeks, expenseWeeks,
+    incomeChange, expenseChange,
+    hasIncomeData: incomeThisMonth > 0,
+    hasExpenseData: expenseThisMonth > 0
+  };
+}
 
 // Helper to map category to realistic rich icon & palette matching MyLife reference
 function getTxCategoryMeta(category, type) {
@@ -48,6 +120,7 @@ function getProjectMeta(p) {
 
 export function renderOverview(container) {
   const metrics = state.getFinancialMetrics();
+  const spark = calcSparklineData();
   const tasks = state.data.tasks.slice(0, 5);
   const goals = state.data.goals.slice(0, 4);
   const projects = state.data.projects.slice(0, 3);
@@ -78,13 +151,20 @@ export function renderOverview(container) {
             </div>
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
-            <div class="flex items-center gap-1 text-emerald-400 font-medium">
-              <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-              <span>+12%</span>
-            </div>
-            <svg class="w-24 h-6 text-emerald-400" viewBox="0 0 100 25" fill="none">
-              <path d="M0 20 Q 25 15, 50 18 T 100 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
+            ${spark.hasIncomeData ? `
+              <div class="flex items-center gap-1 ${spark.incomeChange >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium">
+                <i data-lucide="${spark.incomeChange >= 0 ? 'trending-up' : 'trending-down'}" class="w-3.5 h-3.5"></i>
+                <span>${spark.incomeChange >= 0 ? '+' : ''}${spark.incomeChange}%</span>
+              </div>
+              <svg class="w-24 h-6 ${spark.incomeChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}" viewBox="0 0 100 25" fill="none">
+                <path d="${buildSparklinePath(spark.incomeWeeks)}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            ` : `
+              <span class="text-slate-500 text-[11px]">ยังไม่มีรายการเดือนนี้</span>
+              <svg class="w-20 h-4 text-slate-700" viewBox="0 0 100 20" fill="none">
+                <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" />
+              </svg>
+            `}
           </div>
         </div>
 
@@ -100,17 +180,24 @@ export function renderOverview(container) {
             </div>
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
-            <div class="flex items-center gap-1 text-rose-400 font-medium">
-              <i data-lucide="trending-down" class="w-3.5 h-3.5"></i>
-              <span>-8%</span>
-            </div>
-            <svg class="w-24 h-6 text-rose-400" viewBox="0 0 100 25" fill="none">
-              <path d="M0 8 Q 30 22, 60 12 T 100 20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-            </svg>
+            ${spark.hasExpenseData ? `
+              <div class="flex items-center gap-1 ${spark.expenseChange <= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium">
+                <i data-lucide="${spark.expenseChange <= 0 ? 'trending-down' : 'trending-up'}" class="w-3.5 h-3.5"></i>
+                <span>${spark.expenseChange > 0 ? '+' : ''}${spark.expenseChange}%</span>
+              </div>
+              <svg class="w-24 h-6 ${spark.expenseChange <= 0 ? 'text-emerald-400' : 'text-rose-400'}" viewBox="0 0 100 25" fill="none">
+                <path d="${buildSparklinePath(spark.expenseWeeks)}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            ` : `
+              <span class="text-slate-500 text-[11px]">ยังไม่มีรายการเดือนนี้</span>
+              <svg class="w-20 h-4 text-slate-700" viewBox="0 0 100 20" fill="none">
+                <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" />
+              </svg>
+            `}
           </div>
         </div>
 
-        <!-- Net Balance Card -->
+        <!-- Net Balance Card (No Status Badge) -->
         <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between stagger-item stagger-3">
           <div class="flex items-start justify-between">
             <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
@@ -120,10 +207,6 @@ export function renderOverview(container) {
               <span class="text-xs font-medium text-slate-400">เงินคงเหลือ</span>
               <div id="metric-balance-val" class="text-2xl font-bold text-white tracking-tight mt-1">฿ 0</div>
             </div>
-          </div>
-          <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
-            <span class="text-slate-400">สถานะการเงิน</span>
-            <span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium">${metrics.balance >= 0 ? 'สภาพคล่องดี' : 'เกินงบประมาณ'}</span>
           </div>
         </div>
 
@@ -187,12 +270,22 @@ export function renderOverview(container) {
               <!-- Donut Chart & Category Breakdown (5 cols) -->
               <div class="lg:col-span-5 flex flex-col justify-center">
                 <div class="text-xs font-medium text-slate-400 mb-2">สรุปค่าใช้จ่ายตามหมวดหมู่</div>
-                <div class="relative flex items-center justify-center h-48">
-                  <canvas id="overview-expense-donut"></canvas>
-                  <div class="absolute flex flex-col items-center justify-center text-center pointer-events-none">
-                    <span class="text-xs font-bold text-white">${formatMoney(metrics.totalExpense)}</span>
-                    <span class="text-[10px] text-slate-400">รวมรายจ่าย</span>
-                  </div>
+                <div class="relative flex items-center justify-center h-48" id="overview-donut-wrapper">
+                  ${metrics.totalExpense > 0 ? `
+                    <canvas id="overview-expense-donut"></canvas>
+                    <div class="absolute flex flex-col items-center justify-center text-center pointer-events-none">
+                      <span class="text-xs font-bold text-white">${formatMoney(metrics.totalExpense)}</span>
+                      <span class="text-[10px] text-slate-400">รวมรายจ่าย</span>
+                    </div>
+                  ` : `
+                    <div class="flex flex-col items-center justify-center text-center gap-2 text-slate-500 text-xs py-6">
+                      <div class="w-12 h-12 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center text-slate-400">
+                        <i data-lucide="pie-chart" class="w-6 h-6"></i>
+                      </div>
+                      <span class="text-slate-400 font-medium">ยังไม่มีบันทึกรายจ่าย</span>
+                      <span class="text-[11px] text-slate-600">เมื่อมีรายการ ระบบจะสรุปกราฟให้ที่นี่</span>
+                    </div>
+                  `}
                 </div>
               </div>
             </div>
@@ -513,24 +606,35 @@ function renderMiniCalendar() {
   for (let d = 1; d <= totalDays; d++) {
     const isToday = d === todayDate && viewMonth === todayMonth && viewYear === todayYear;
     const hasEvent = eventDays.has(d);
+    const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     if (isToday) {
       html += `
-        <span class="relative py-1 w-7 h-7 mx-auto rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shadow-lg shadow-purple-600/40 transition-transform hover:scale-110">
+        <button type="button" class="mini-cal-day-cell relative py-1 w-7 h-7 mx-auto rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shadow-lg shadow-purple-600/40 transition-transform hover:scale-110 cursor-pointer" data-date="${dateKey}" title="คลิกเพื่อดูรายการการเงินวันที่ ${d}">
           ${d}
           ${hasEvent ? '<span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400"></span>' : ''}
-        </span>
+        </button>
       `;
     } else {
       html += `
-        <span class="relative py-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer transition-colors flex items-center justify-center">
+        <button type="button" class="mini-cal-day-cell relative py-1 w-7 h-7 mx-auto text-slate-400 hover:text-white hover:bg-purple-600/30 rounded-lg cursor-pointer transition-colors flex items-center justify-center" data-date="${dateKey}" title="คลิกเพื่อดูรายการการเงินวันที่ ${d}">
           ${d}
           ${hasEvent ? '<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-400"></span>' : ''}
-        </span>
+        </button>
       `;
     }
   }
 
   container.innerHTML = html;
+
+  // Bind day clicks to filter finance
+  container.querySelectorAll('.mini-cal-day-cell').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const dateStr = e.currentTarget.getAttribute('data-date');
+      if (dateStr) {
+        filterFinanceByDate(dateStr);
+      }
+    });
+  });
 }
 
 // 5. Finance Chart Progressive Line Drawing Animation
@@ -659,62 +763,48 @@ function initOverviewCharts(metrics) {
     }
   }
 
-  if (donutCanvas && window.Chart) {
+  if (donutCanvas && window.Chart && metrics.totalExpense > 0) {
     const ctx = donutCanvas.getContext('2d');
     const categories = Object.keys(metrics.categoryExpenses);
     const dataValues = Object.values(metrics.categoryExpenses);
-    const hasDonutData = dataValues.length > 0 && dataValues.some(v => v > 0);
     const colors = ['#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#10b981', '#64748b'];
 
-    if (!hasDonutData) {
-      donutCanvas.style.display = 'none';
-      const parent = donutCanvas.parentElement;
-      if (!parent.querySelector('.donut-empty-state')) {
-        const empty = document.createElement('div');
-        empty.className = 'donut-empty-state flex flex-col items-center justify-center h-full gap-2 text-slate-600 text-xs';
-        empty.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01"/></svg><p>ยังไม่มีรายจ่าย</p>`;
-        parent.appendChild(empty);
-      }
-    } else {
-      donutCanvas.style.display = '';
-      donutCanvas.parentElement.querySelector('.donut-empty-state')?.remove();
-      expenseDonutChart = new window.Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: categories,
-          datasets: [{
-            data: dataValues,
-            backgroundColor: colors,
-            borderWidth: 0,
-            hoverOffset: 6
-          }]
+    expenseDonutChart = new window.Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: categories,
+        datasets: [{
+          data: dataValues,
+          backgroundColor: colors,
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 1400,
+          easing: 'easeOutQuart'
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '72%',
-          animation: {
-            animateRotate: true,
-            animateScale: true,
-            duration: 1400,
-            easing: 'easeOutQuart'
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#1e213e',
-              borderColor: 'rgba(147, 130, 245, 0.2)',
-              borderWidth: 1,
-              titleColor: '#fff',
-              bodyColor: '#cbd5e1',
-              callbacks: {
-                label: ctx => `${ctx.label}: ฿${ctx.parsed.toLocaleString()}`
-              }
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e213e',
+            borderColor: 'rgba(147, 130, 245, 0.2)',
+            borderWidth: 1,
+            titleColor: '#fff',
+            bodyColor: '#cbd5e1',
+            callbacks: {
+              label: ctx => `${ctx.label}: ฿${ctx.parsed.toLocaleString()}`
             }
           }
         }
-      });
-    }
+      }
+    });
   }
 }
 

@@ -2,6 +2,7 @@
 import { state } from '../state.js';
 import { formatThaiDateFull, formatThaiDateShort, getThaiBuddhistYear, showToast } from '../utils.js';
 import { showConfirmDialog } from '../modals.js';
+import { filterFinanceByDate } from './finance.js';
 
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
@@ -16,6 +17,9 @@ const THAI_MONTHS = [
 export function renderCalendar(container) {
   const events = state.data.calendarEvents;
   const selectedEvents = events.filter(e => e.date === selectedDateStr);
+  const dayTxs = (state.data.transactions || []).filter(t => t.date && t.date.startsWith(selectedDateStr));
+  const dayExpense = dayTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const dayIncome = dayTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   container.innerHTML = `
     <div class="space-y-6 pb-12">
@@ -111,6 +115,24 @@ export function renderCalendar(container) {
                   </div>
                 `;
               }).join('')}
+            </div>
+
+            <!-- Quick View Finance for Selected Date -->
+            <div class="mt-4 pt-4 border-t border-slate-800">
+              <button id="btn-view-day-finance" class="w-full py-2.5 px-3.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-semibold transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-between group cursor-pointer shadow-lg shadow-purple-900/20">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-lg bg-purple-500/30 flex items-center justify-center text-purple-300 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-bold text-white">ดูรายการการเงินวันนี้</div>
+                    <div class="text-[10px] text-slate-400">
+                      ${dayTxs.length > 0 ? `มี ${dayTxs.length} รายการ (จ่าย ฿${dayExpense.toLocaleString()} / รับ ฿${dayIncome.toLocaleString()})` : 'ยังไม่มีรายการ (คลิกเพื่อเปิด)'}
+                    </div>
+                  </div>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -219,6 +241,10 @@ function bindCalendarEvents(container) {
     viewMonth = now.getMonth();
     selectedDateStr = now.toISOString().slice(0, 10);
     renderCalendar(container);
+  });
+
+  container.querySelector('#btn-view-day-finance')?.addEventListener('click', () => {
+    filterFinanceByDate(selectedDateStr);
   });
 
   container.querySelector('#btn-add-event')?.addEventListener('click', () => {
