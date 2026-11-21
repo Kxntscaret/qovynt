@@ -1,0 +1,153 @@
+// Auth View - Elegant Login & Registration page for QOVYNT
+import { auth } from '../auth.js';
+import { db } from '../db.js';
+import { state } from '../state.js';
+import { showToast } from '../utils.js';
+
+let authMode = 'login'; // 'login' or 'register'
+
+export function renderAuth(container) {
+  const isCloud = db.isCloudActive;
+
+  container.innerHTML = `
+    <div class="min-h-[80vh] flex items-center justify-center py-10 px-4 animate-fade-in">
+      <div class="glass-panel p-8 rounded-3xl w-full max-w-md border border-purple-500/30 relative overflow-hidden shadow-2xl">
+        <!-- Ambient background glows -->
+        <div class="absolute -top-20 -left-20 w-44 h-44 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-20 -right-20 w-44 h-44 bg-cyan-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Brand Emblem -->
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 mx-auto mb-3">
+            <img src="assets/qovynt-logo.svg" alt="QOVYNT" class="w-full h-full drop-shadow-lg" />
+          </div>
+          <h2 class="text-2xl font-black text-white tracking-wider">QOVYNT</h2>
+          <p class="text-xs text-purple-300 font-medium mt-1">The Autonomous Life Operating System</p>
+        </div>
+
+        <!-- Google OAuth Button -->
+        <button id="auth-btn-google" class="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-semibold text-xs flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] mb-5">
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>เข้าสู่ระบบด้วย Google</span>
+        </button>
+
+        <div class="flex items-center gap-3 my-5">
+          <div class="h-px bg-slate-800 flex-1"></div>
+          <span class="text-[11px] text-slate-500 font-medium uppercase">หรือเข้าใช้งานด้วยอีเมล</span>
+          <div class="h-px bg-slate-800 flex-1"></div>
+        </div>
+
+        <!-- Auth Tabs (Login / Register) -->
+        <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800 mb-4 text-xs">
+          <button id="auth-tab-login" class="flex-1 py-1.5 rounded-lg text-center font-medium transition-all ${authMode === 'login' ? 'bg-purple-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}">
+            เข้าสู่ระบบ
+          </button>
+          <button id="auth-tab-register" class="flex-1 py-1.5 rounded-lg text-center font-medium transition-all ${authMode === 'register' ? 'bg-purple-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}">
+            ลงทะเบียนใหม่
+          </button>
+        </div>
+
+        <!-- Form fields -->
+        <form id="auth-form" class="space-y-3.5">
+          ${authMode === 'register' ? `
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อ-นามสกุล หรือชื่อเล่น</label>
+              <input 
+                type="text" 
+                id="auth-name" 
+                required
+                placeholder="เช่น Poom" 
+                class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+              />
+            </div>
+          ` : ''}
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">อีเมล (Email)</label>
+            <input 
+              type="email" 
+              id="auth-email" 
+              required
+              placeholder="you@example.com" 
+              class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">รหัสผ่าน (Password)</label>
+            <input 
+              type="password" 
+              id="auth-password" 
+              required
+              placeholder="••••••••" 
+              class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+            />
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-purple-600/30 transition-all mt-4">
+            ${authMode === 'login' ? 'เข้าสู่ระบบ QOVYNT' : 'สร้างบัญชีผู้ใช้งานใหม่'}
+          </button>
+        </form>
+
+        <!-- Demo 1-Click Guest Button -->
+        <div class="mt-6 pt-5 border-t border-slate-800 text-center">
+          <button id="auth-btn-demo" class="text-xs text-purple-400 hover:text-purple-300 font-semibold underline transition-colors">
+            ⚡ หรือทดลองใช้งานทันที (Demo Mode 1-Click)
+          </button>
+          <p class="text-[10px] text-slate-500 mt-2">
+            ${isCloud ? '● เชื่อมต่อ Supabase Cloud Database' : '○ บันทึกข้อมูลแบบ Local Storage พร้อมเชื่อมต่อ Cloud ได้ตลอดเวลา'}
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  bindAuthEvents(container);
+}
+
+function bindAuthEvents(container) {
+  // Tabs
+  container.querySelector('#auth-tab-login')?.addEventListener('click', () => {
+    authMode = 'login';
+    renderAuth(container);
+  });
+  container.querySelector('#auth-tab-register')?.addEventListener('click', () => {
+    authMode = 'register';
+    renderAuth(container);
+  });
+
+  // Google Sign In
+  container.querySelector('#auth-btn-google')?.addEventListener('click', async () => {
+    const ok = await auth.signInWithGoogle();
+    if (ok) {
+      state.setView('overview');
+    }
+  });
+
+  // Form Submit
+  container.querySelector('#auth-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = container.querySelector('#auth-email').value.trim();
+    const password = container.querySelector('#auth-password').value;
+
+    if (authMode === 'login') {
+      const ok = await auth.signInWithPassword(email, password);
+      if (ok) state.setView('overview');
+    } else {
+      const name = container.querySelector('#auth-name').value.trim();
+      const ok = await auth.signUp(email, password, name);
+      if (ok) state.setView('overview');
+    }
+  });
+
+  // Demo 1-click
+  container.querySelector('#auth-btn-demo')?.addEventListener('click', () => {
+    auth.loginAsGuest();
+    state.setView('overview');
+  });
+}

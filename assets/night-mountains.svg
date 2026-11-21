@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f0c29" />
+      <stop offset="40%" stop-color="#1e1844" />
+      <stop offset="75%" stop-color="#2d2162" />
+      <stop offset="100%" stop-color="#3c267a" />
+    </linearGradient>
+    <linearGradient id="mountGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#241a52" />
+      <stop offset="100%" stop-color="#130d2d" />
+    </linearGradient>
+    <linearGradient id="mountGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a123f" />
+      <stop offset="100%" stop-color="#0b081c" />
+    </linearGradient>
+    <linearGradient id="mountGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#120c2b" />
+      <stop offset="100%" stop-color="#05030c" />
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="40%" stop-color="#e2d9ff" stop-opacity="0.6" />
+      <stop offset="80%" stop-color="#8b5cf6" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0" />
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Sky background -->
+  <rect width="400" height="240" fill="url(#skyGrad)" rx="16" />
+
+  <!-- Stars -->
+  <g fill="#ffffff" opacity="0.8">
+    <circle cx="35" cy="30" r="1" opacity="0.6" />
+    <circle cx="85" cy="55" r="1.3" opacity="0.9" />
+    <circle cx="120" cy="25" r="0.8" opacity="0.5" />
+    <circle cx="165" cy="45" r="1.2" opacity="0.7" />
+    <circle cx="210" cy="20" r="1.5" opacity="0.9" />
+    <circle cx="245" cy="65" r="0.9" opacity="0.6" />
+    <circle cx="280" cy="35" r="1.4" opacity="0.8" />
+    <circle cx="310" cy="70" r="1.1" opacity="0.7" />
+    <circle cx="50" cy="75" r="1.2" opacity="0.6" />
+    <circle cx="140" cy="80" r="0.8" opacity="0.5" />
+    <circle cx="190" cy="60" r="1.3" opacity="0.85" />
+    <circle cx="260" cy="25" r="0.9" opacity="0.7" />
+    <circle cx="360" cy="30" r="1.2" opacity="0.8" />
+    <circle cx="375" cy="85" r="1" opacity="0.5" />
+    <circle cx="25" cy="110" r="1.1" opacity="0.6" />
+  </g>
+
+  <!-- Glowing Moon -->
+  <circle cx="340" cy="60" r="28" fill="url(#moonGlow)" />
+  <circle cx="340" cy="60" r="12" fill="#ffffff" filter="url(#glow)" />
+  <circle cx="344" cy="58" r="11" fill="#2d2162" />
+
+  <!-- Background Mountains -->
+  <path d="M-20 240 L40 145 L110 185 L180 130 L250 175 L330 120 L420 240 Z" fill="url(#mountGrad1)" opacity="0.85" />
+
+  <!-- Midground Mountains -->
+  <path d="M-10 240 L70 165 L150 200 L220 155 L300 205 L380 150 L420 240 Z" fill="url(#mountGrad2)" opacity="0.95" />
+
+  <!-- Foreground Mountains -->
+  <path d="M-10 240 L90 195 L170 215 L260 185 L350 220 L410 190 L420 240 Z" fill="url(#mountGrad3)" />
+
+  <!-- Pine Trees silhouettes -->
+  <g fill="#070412">
+    <!-- Cluster 1 -->
+    <polygon points="20,240 25,205 30,240" />
+    <polygon points="22,215 25,198 28,215" />
+    <polygon points="32,240 37,212 42,240" />
+    <polygon points="45,240 50,200 55,240" />
+    <polygon points="47,212 50,192 53,212" />
+    <polygon points="60,240 64,218 68,240" />
+    <!-- Cluster 2 -->
+    <polygon points="120,240 125,210 130,240" />
+    <polygon points="135,240 140,205 145,240" />
+    <polygon points="137,215 140,198 143,215" />
+    <polygon points="150,240 154,218 158,240" />
+    <!-- Cluster 3 -->
+    <polygon points="220,240 225,208 230,240" />
+    <polygon points="232,240 238,198 244,240" />
+    <polygon points="235,210 238,190 241,210" />
+    <polygon points="250,240 255,215 260,240" />
+    <!-- Cluster 4 -->
+    <polygon points="320,240 325,205 330,240" />
+    <polygon points="333,240 338,192 343,240" />
+    <polygon points="335,206 338,185 341,206" />
+    <polygon points="350,240 355,208 360,240" />
+    <polygon points="370,240 375,218 380,240" />
+    <polygon points="385,240 390,202 395,240" />
+  </g>
+
+  <!-- Gentle mist/fog at bottom -->
+  <rect x="0" y="215" width="400" height="25" fill="#3c267a" opacity="0.18" />
+</svg>

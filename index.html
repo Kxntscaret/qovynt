@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QOVYNT — Your Life. Your Space.</title>
+  <meta name="description" content="QOVYNT - ระบบบริหารจัดการชีวิตครบวงจร การเงิน งาน ปฏิทิน เป้าหมาย บันทึก โปรเจกต์">
+  <link rel="icon" type="image/svg+xml" href="assets/qovynt-logo.svg">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#7c3aed',
+              dark: '#0a0b16',
+              card: '#14172e',
+              border: 'rgba(147, 130, 245, 0.12)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Supabase Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-[#0a0b16] text-slate-100 min-h-screen flex">
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+
+  <!-- Left Sidebar Navigation -->
+  <aside id="sidebar" class="fixed lg:static top-0 bottom-0 left-0 w-64 bg-[#0e1022]/95 backdrop-blur-xl border-r border-purple-500/10 flex flex-col justify-between p-4 z-50 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 overflow-y-auto">
+    <!-- Brand / Logo -->
+    <div>
+      <div class="flex items-center gap-3 px-2 py-3 mb-6 cursor-pointer" data-view="overview">
+        <div class="w-10 h-10 shrink-0">
+          <img src="assets/qovynt-logo.svg" alt="QOVYNT Logo" class="w-full h-full drop-shadow-md">
+        </div>
+        <div>
+          <div class="text-xl font-black tracking-wider text-white bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400">
+            QOVYNT
+          </div>
+          <div class="text-[10px] text-slate-400 font-medium">Your Life. Your Space.</div>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="space-y-1">
+        <a href="#overview" class="nav-item active" data-view="overview">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Overview</span>
+        </a>
+        <a href="#finance" class="nav-item" data-view="finance">
+          <i data-lucide="wallet" class="w-4 h-4"></i>
+          <span>Finance</span>
+        </a>
+        <a href="#tasks" class="nav-item" data-view="tasks">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Tasks</span>
+        </a>
+        <a href="#calendar" class="nav-item" data-view="calendar">
+          <i data-lucide="calendar" class="w-4 h-4"></i>
+          <span>Calendar</span>
+        </a>
+        <a href="#goals" class="nav-item" data-view="goals">
+          <i data-lucide="target" class="w-4 h-4"></i>
+          <span>Goals</span>
+        </a>
+        <a href="#notes" class="nav-item" data-view="notes">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span>Notes</span>
+        </a>
+        <a href="#projects" class="nav-item" data-view="projects">
+          <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+          <span>Projects</span>
+        </a>
+        <a href="#habits" class="nav-item" data-view="habits">
+          <i data-lucide="zap" class="w-4 h-4"></i>
+          <span>Habits</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom Section -->
+    <div class="pt-4 space-y-3">
+      <!-- Quote Card with Mountain Art -->
+      <div class="relative rounded-2xl overflow-hidden border border-purple-500/20 shadow-lg group cursor-pointer" data-view="notes">
+        <img src="assets/night-mountains.svg" alt="Night Mountains" class="w-full h-24 object-cover transition-transform duration-500 group-hover:scale-105" />
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-3 flex flex-col justify-end">
+          <p class="text-[10px] italic text-slate-200 line-clamp-2">"ทุกก้าวเล็ก ๆ คือความสำเร็จที่ยิ่งใหญ่"</p>
+          <span class="text-[9px] text-purple-400 font-semibold mt-0.5">— QOVYNT</span>
+        </div>
+      </div>
+
+      <!-- Settings & Logout -->
+      <div class="pt-2 border-t border-slate-800/80 space-y-1">
+        <a href="#settings" class="nav-item" data-view="settings">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span>Settings</span>
+        </a>
+        <a href="#logout" id="nav-logout" class="nav-item text-slate-400 hover:text-rose-400">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Layout -->
+  <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+    
+    <!-- Top Header Navigation Bar -->
+    <header class="sticky top-0 z-30 bg-[#0a0b16]/80 backdrop-blur-xl border-b border-purple-500/10 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+      <!-- Left: Mobile Menu & Live Greetings -->
+      <div class="flex items-center gap-3">
+        <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <div>
+          <div class="flex items-center gap-2 text-xs font-medium text-slate-400 mb-0.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span id="header-date">วันเสาร์ที่ 21 พฤศจิกายน 2569</span>
+          </div>
+          <h1 id="header-greeting" class="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-1.5">
+            สวัสดีตอนเย็น, คุณ 👋
+          </h1>
+          <p id="header-subtitle" class="text-[11px] text-slate-400 hidden sm:block">ขอให้วันนี้เป็นวันที่ดีนะ เป็นกำลังใจให้เสมอ!</p>
+        </div>
+      </div>
+
+      <!-- Right: Search Command Palette, Actions & User Profile -->
+      <div class="flex items-center gap-2.5 sm:gap-4">
+        <!-- Search Bar Trigger (Ctrl + K) -->
+        <button id="header-search-trigger" class="hidden md:flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/40 text-slate-400 hover:text-slate-200 text-xs transition-all w-52 sm:w-64">
+          <i data-lucide="search" class="w-4 h-4 text-purple-400"></i>
+          <span class="flex-1 text-left truncate">ค้นหา...</span>
+          <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-400 font-mono">Ctrl + K</kbd>
+        </button>
+
+        <!-- Notification Bell -->
+        <button id="btn-notifications" class="relative p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors" data-tooltip="การแจ้งเตือน">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-purple-500"></span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="btn-theme-toggle" class="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors" data-tooltip="โหมดหน้าจอ">
+          <i data-lucide="moon" class="w-4 h-4 text-purple-400"></i>
+        </button>
+
+        <!-- User Profile Pill -->
+        <div id="header-user-btn" class="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 cursor-pointer transition-all">
+          <img id="header-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-7 h-7 rounded-xl object-cover ring-2 ring-purple-500/30">
+          <div class="hidden sm:block text-left">
+            <div id="header-user-name" class="text-xs font-semibold text-white leading-tight">Poom</div>
+            <div id="header-user-role" class="text-[10px] text-purple-400 leading-none">Pro Member</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main View Dynamic Container -->
+    <main id="view-container" class="flex-1 px-4 sm:px-8 py-6 max-w-7xl w-full mx-auto">
+      <!-- Dynamic View Component loads here -->
+    </main>
+  </div>
+
+  <!-- Modal Overlay System -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div id="modal-content" class="w-full max-w-md"></div>
+  </div>
+
+  <!-- Command Palette Modal (Ctrl + K) -->
+  <div id="command-palette-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden items-start justify-center pt-20 px-4">
+    <div class="glass-panel p-4 rounded-2xl w-full max-w-lg border border-purple-500/40 shadow-2xl animate-modal-pop">
+      <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+        <i data-lucide="search" class="w-5 h-5 text-purple-400"></i>
+        <input 
+          type="text" 
+          id="command-palette-input" 
+          placeholder="พิมพ์ค้นหาหน้า, งาน, บันทึก หรือคำสั่งลัด..." 
+          class="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
+        />
+        <kbd class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400">ESC</kbd>
+      </div>
+
+      <div id="command-palette-results" class="pt-3 max-h-80 overflow-y-auto space-y-1">
+        <!-- Results injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Main JavaScript Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

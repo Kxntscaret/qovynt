@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="qovyntGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <linearGradient id="qovyntGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <filter id="logoGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Glowing outer ambient ring -->
+  <circle cx="50" cy="50" r="42" fill="none" stroke="url(#qovyntGrad)" stroke-width="2" opacity="0.4" stroke-dasharray="6 4" />
+
+  <!-- Main Compass Needle / Prism Geometric Mark -->
+  <g filter="url(#logoGlow)">
+    <!-- Top-Right Blade -->
+    <path d="M 50 15 L 75 50 L 50 50 Z" fill="url(#qovyntGrad)" opacity="0.95" />
+    <!-- Bottom-Left Blade -->
+    <path d="M 50 85 L 25 50 L 50 50 Z" fill="url(#qovyntGrad2)" opacity="0.9" />
+    <!-- Top-Left Blade (Shadow side) -->
+    <path d="M 50 15 L 25 50 L 50 50 Z" fill="#4338ca" opacity="0.75" />
+    <!-- Bottom-Right Blade (Highlight side) -->
+    <path d="M 50 85 L 75 50 L 50 50 Z" fill="#9333ea" opacity="0.7" />
+    <!-- Center Core Spark -->
+    <circle cx="50" cy="50" r="6" fill="#ffffff" />
+    <circle cx="50" cy="50" r="3" fill="#38bdf8" />
+  </g>
+</svg>
