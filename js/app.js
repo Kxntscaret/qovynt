@@ -7,16 +7,16 @@ import { formatThaiDateFull, getDynamicGreeting, showToast, playAudioFeedback } 
 import { initParticles } from './particles.js?v=20261121_03';
 
 // Import Views
-import { renderOverview } from './views/overview.js?v=20261121_04';
-import { renderFinance } from './views/finance.js?v=20261121_04';
-import { renderTasks } from './views/tasks.js?v=20261121_04';
-import { renderCalendar } from './views/calendar.js?v=20261121_04';
-import { renderGoals } from './views/goals.js?v=20261121_04';
-import { renderNotes } from './views/notes.js?v=20261121_04';
-import { renderProjects } from './views/projects.js?v=20261121_04';
-import { renderHabits } from './views/habits.js?v=20261121_04';
-import { renderSettings } from './views/settings.js?v=20261121_04';
-import { renderAuth } from './views/auth-view.js?v=20261121_04';
+import { renderOverview } from './views/overview.js?v=20261121_05';
+import { renderFinance } from './views/finance.js?v=20261121_05';
+import { renderTasks } from './views/tasks.js?v=20261121_05';
+import { renderCalendar } from './views/calendar.js?v=20261121_05';
+import { renderGoals } from './views/goals.js?v=20261121_05';
+import { renderNotes } from './views/notes.js?v=20261121_05';
+import { renderProjects } from './views/projects.js?v=20261121_05';
+import { renderHabits } from './views/habits.js?v=20261121_05';
+import { renderSettings } from './views/settings.js?v=20261121_05';
+import { renderAuth } from './views/auth-view.js?v=20261121_05';
 
 // Helper to safely trigger Lucide icon rendering across the entire document
 export function refreshIcons(root = document.body) {
@@ -124,20 +124,16 @@ class Application {
     if (view === 'auth') {
       if (sidebar) sidebar.style.display = 'none';
       if (header) header.style.display = 'none';
-      this.viewContainer.classList.remove('max-w-7xl', 'px-4', 'sm:px-8', 'py-6');
-      this.viewContainer.classList.add('p-0');
+      this.viewContainer.className = 'w-full min-h-screen p-0 m-0';
       if (mainWrap) {
-        mainWrap.classList.remove('flex-1');
-        mainWrap.classList.add('w-full');
+        mainWrap.className = 'w-full min-h-screen p-0 m-0 relative';
       }
     } else {
       if (sidebar) sidebar.style.display = '';
       if (header) header.style.display = '';
-      this.viewContainer.classList.add('max-w-[1720px]', '2xl:max-w-[1850px]', 'px-4', 'sm:px-8', 'xl:px-12', 'py-6');
-      this.viewContainer.classList.remove('max-w-7xl', 'p-0');
+      this.viewContainer.className = 'flex-1 px-4 sm:px-8 xl:px-12 py-6 max-w-[1720px] 2xl:max-w-[1850px] w-full mx-auto animate-fade-in';
       if (mainWrap) {
-        mainWrap.classList.add('flex-1');
-        mainWrap.classList.remove('w-full');
+        mainWrap.className = 'flex-1 flex flex-col min-w-0 min-h-screen relative z-10';
       }
     }
 

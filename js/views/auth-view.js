@@ -17,9 +17,9 @@ export function renderAuth(container) {
   container.innerHTML = `
     <div class="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden">
       
-      <!-- Ambient Background Layer (Blurred Menu Backdrop & Dark Overlay) -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <img src="assets/menu-bg.jfif" alt="Backdrop" class="w-full h-full object-cover scale-125 filter blur-lg brightness-60 contrast-110 opacity-55" />
+      <!-- Fullscreen Ambient Background Layer (Zero borders, fills 100% of the entire screen) -->
+      <div class="fixed inset-0 w-screen h-screen overflow-hidden pointer-events-none -z-10">
+        <img src="assets/menu-bg.jfif" alt="Backdrop" class="w-full h-full object-cover scale-110 filter blur-lg brightness-60 contrast-110 opacity-55" />
         <div class="absolute inset-0 bg-[#0a0b16]/75 backdrop-blur-md"></div>
       </div>
 
