@@ -7,16 +7,16 @@ import { formatThaiDateFull, getDynamicGreeting, showToast, playAudioFeedback } 
 import { initParticles } from './particles.js?v=20261121_03';
 
 // Import Views
-import { renderOverview } from './views/overview.js?v=20261121_03';
-import { renderFinance } from './views/finance.js?v=20261121_03';
-import { renderTasks } from './views/tasks.js?v=20261121_03';
-import { renderCalendar } from './views/calendar.js?v=20261121_03';
-import { renderGoals } from './views/goals.js?v=20261121_03';
-import { renderNotes } from './views/notes.js?v=20261121_03';
-import { renderProjects } from './views/projects.js?v=20261121_03';
-import { renderHabits } from './views/habits.js?v=20261121_03';
-import { renderSettings } from './views/settings.js?v=20261121_03';
-import { renderAuth } from './views/auth-view.js?v=20261121_03';
+import { renderOverview } from './views/overview.js?v=20261121_04';
+import { renderFinance } from './views/finance.js?v=20261121_04';
+import { renderTasks } from './views/tasks.js?v=20261121_04';
+import { renderCalendar } from './views/calendar.js?v=20261121_04';
+import { renderGoals } from './views/goals.js?v=20261121_04';
+import { renderNotes } from './views/notes.js?v=20261121_04';
+import { renderProjects } from './views/projects.js?v=20261121_04';
+import { renderHabits } from './views/habits.js?v=20261121_04';
+import { renderSettings } from './views/settings.js?v=20261121_04';
+import { renderAuth } from './views/auth-view.js?v=20261121_04';
 
 // Helper to safely trigger Lucide icon rendering across the entire document
 export function refreshIcons(root = document.body) {
