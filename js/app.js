@@ -194,7 +194,7 @@ class Application {
       });
     });
 
-    // Glassmorphic Decision Dialog for Logout
+    // Glassmorphic Decision Dialog for Sidebar Logout
     document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
       e.preventDefault();
       const confirmed = await showConfirmDialog({
@@ -215,19 +215,77 @@ class Application {
 
   setupHeader() {
     this.updateHeader();
-    document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
-      showToast('กำลังใช้งานธีม Cyber Dark Violet (ค่าเริ่มต้นที่ดีที่สุด)', 'info');
-    });
 
-    document.getElementById('btn-notifications')?.addEventListener('click', () => {
-      showToast('ไม่มีการแจ้งเตือนใหม่ในขณะนี้', 'info');
-    });
+    const userBtn = document.getElementById('header-user-btn');
+    const userDropdown = document.getElementById('header-user-dropdown');
+    const chevronIcon = document.getElementById('header-user-chevron');
+    const notifBtn = document.getElementById('btn-notifications');
+    const notifDropdown = document.getElementById('notifications-dropdown');
 
-    document.getElementById('header-user-btn')?.addEventListener('click', () => {
+    // Toggle User Profile Dropdown Popup (Settings & Logout)
+    userBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (!auth.isAuthenticated()) {
         state.setView('auth');
+        return;
+      }
+      if (notifDropdown) notifDropdown.classList.add('hidden');
+
+      const isHidden = userDropdown?.classList.contains('hidden');
+      if (isHidden) {
+        userDropdown?.classList.remove('hidden');
+        if (chevronIcon) chevronIcon.style.transform = 'rotate(180deg)';
       } else {
-        state.setView('settings');
+        userDropdown?.classList.add('hidden');
+        if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    // Dropdown Settings Button
+    document.getElementById('dropdown-btn-settings')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown?.classList.add('hidden');
+      if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+      state.setView('settings');
+    });
+
+    // Dropdown Logout Button (Decision Dialog)
+    document.getElementById('dropdown-btn-logout')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      userDropdown?.classList.add('hidden');
+      if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการออกจากระบบ',
+        message: 'คุณต้องการออกจากระบบ QOVYNT ใช่หรือไม่? เซสชันปัจจุบันของคุณจะสิ้นสุดลง',
+        confirmText: 'ออกจากระบบทันที',
+        cancelText: 'อยู่ต่อในระบบ',
+        type: 'warning',
+        icon: 'log-out'
+      });
+
+      if (confirmed) {
+        await auth.signOut();
+        state.setView('auth');
+      }
+    });
+
+    // Toggle Notifications Dropdown
+    notifBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown?.classList.add('hidden');
+      if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+      notifDropdown?.classList.toggle('hidden');
+    });
+
+    // Close Dropdowns on Click Outside
+    document.addEventListener('click', (e) => {
+      if (!userBtn?.contains(e.target) && !userDropdown?.contains(e.target)) {
+        userDropdown?.classList.add('hidden');
+        if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+      }
+      if (!notifBtn?.contains(e.target) && !notifDropdown?.contains(e.target)) {
+        notifDropdown?.classList.add('hidden');
       }
     });
   }
@@ -247,19 +305,24 @@ class Application {
     const avatarEl = document.getElementById('header-user-avatar');
     const nameEl = document.getElementById('header-user-name');
     const userRoleEl = document.getElementById('header-user-role');
+    const dropdownNameEl = document.getElementById('dropdown-user-name');
+    const dropdownEmailEl = document.getElementById('dropdown-user-email');
     const logoutBtn = document.getElementById('nav-logout');
 
     if (user) {
-      if (avatarEl) {
-        avatarEl.src = user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
-      }
+      const avatarUrl = user.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(user.email || user.name)}`;
+      if (avatarEl) avatarEl.src = avatarUrl;
       if (nameEl) nameEl.textContent = user.name || 'คุณ';
       if (userRoleEl) userRoleEl.textContent = user.provider === 'google' ? 'Google Account' : 'Verified Member';
+      if (dropdownNameEl) dropdownNameEl.textContent = user.name || 'คุณ';
+      if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || 'user@example.com';
       if (logoutBtn) logoutBtn.classList.remove('hidden');
     } else {
       if (avatarEl) avatarEl.src = 'https://api.dicebear.com/7.x/identicon/svg?seed=guest';
       if (nameEl) nameEl.textContent = 'เข้าสู่ระบบ';
       if (userRoleEl) userRoleEl.textContent = 'ยังไม่ได้ล็อกอิน';
+      if (dropdownNameEl) dropdownNameEl.textContent = 'ยังไม่ได้ล็อกอิน';
+      if (dropdownEmailEl) dropdownEmailEl.textContent = 'กรุณาเข้าสู่ระบบ';
       if (logoutBtn) logoutBtn.classList.add('hidden');
     }
   }

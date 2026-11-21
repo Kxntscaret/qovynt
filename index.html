@@ -70,7 +70,7 @@
         </div>
       </div>
 
-      <!-- 3. Navigation Menu with Smooth Sliding Transition -->
+      <!-- Navigation Menu -->
       <nav class="space-y-1.5" id="sidebar-nav">
         <a href="#overview" class="nav-item active" data-view="overview">
           <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
@@ -155,38 +155,78 @@
         </div>
       </div>
 
-      <!-- Right: Search Command Palette, Actions & User Profile -->
-      <div class="flex items-center gap-2.5 sm:gap-4">
-        <!-- Search Bar Trigger (Ctrl + K) -->
-        <button id="header-search-trigger" class="hidden md:flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/40 text-slate-400 hover:text-slate-200 text-xs transition-all w-52 sm:w-64">
-          <i data-lucide="search" class="w-4 h-4 text-purple-400"></i>
+      <!-- Right: Search (แว่นขยาย), Notification Bell (กระดิ่ง), and User Profile with Popup Menu -->
+      <div class="flex items-center gap-2.5 sm:gap-3.5">
+        
+        <!-- Search Bar Trigger with Magnifying Glass Icon (แว่นขยาย) -->
+        <button id="header-search-trigger" class="hidden md:flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/40 text-slate-400 hover:text-slate-200 text-xs transition-all w-52 sm:w-64 group" title="ค้นหา (Ctrl + K)">
+          <i data-lucide="search" class="w-4 h-4 text-purple-400 shrink-0 transition-transform duration-200 group-hover:scale-110"></i>
           <span class="flex-1 text-left truncate">ค้นหา...</span>
           <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-400 font-mono">Ctrl + K</kbd>
         </button>
 
-        <!-- Notification Bell -->
-        <button id="btn-notifications" class="relative p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors" data-tooltip="การแจ้งเตือน">
-          <i data-lucide="bell" class="w-4 h-4"></i>
-          <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-purple-500"></span>
-        </button>
+        <!-- Notification Bell (กระดิ่งแจ้งเตือน) -->
+        <div class="relative">
+          <button id="btn-notifications" class="relative p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/40 text-slate-300 hover:text-white transition-all hover:scale-105" data-tooltip="การแจ้งเตือน" title="การแจ้งเตือน">
+            <i data-lucide="bell" class="w-4 h-4 text-slate-300"></i>
+            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-purple-500 shadow-sm shadow-purple-500"></span>
+          </button>
 
-        <!-- Theme Toggle -->
-        <button id="btn-theme-toggle" class="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-colors" data-tooltip="โหมดหน้าจอ">
-          <i data-lucide="moon" class="w-4 h-4 text-purple-400"></i>
-        </button>
-
-        <!-- User Profile Pill -->
-        <div id="header-user-btn" class="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 cursor-pointer transition-all hover:scale-105">
-          <img id="header-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-7 h-7 rounded-xl object-cover ring-2 ring-purple-500/30">
-          <div class="hidden sm:block text-left">
-            <div id="header-user-name" class="text-xs font-semibold text-white leading-tight">Poom</div>
-            <div id="header-user-role" class="text-[10px] text-purple-400 leading-none">Pro Member</div>
+          <!-- Notification Dropdown -->
+          <div id="notifications-dropdown" class="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-[#14172e]/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-3 hidden z-50 animate-modal-pop">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-2">
+              <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                <i data-lucide="bell" class="w-3.5 h-3.5 text-purple-400"></i>
+                การแจ้งเตือน
+              </span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">ใหม่ 1</span>
+            </div>
+            <div class="space-y-2">
+              <div class="p-2 rounded-xl bg-slate-900/60 border border-slate-800/60 text-xs">
+                <div class="text-xs font-semibold text-white">ยินดีต้อนรับสู่ QOVYNT</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">เริ่มจัดการชีวิต การเงิน และงานของคุณได้อย่างมีประสิทธิภาพ!</div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- User Profile Pill with Floating Dropdown Popup (Settings & Logout) -->
+        <div class="relative">
+          <button id="header-user-btn" class="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/40 cursor-pointer transition-all hover:scale-[1.02] focus:outline-none" title="เมนูผู้ใช้งาน">
+            <img id="header-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-7 h-7 rounded-xl object-cover ring-2 ring-purple-500/30">
+            <div class="hidden sm:block text-left">
+              <div id="header-user-name" class="text-xs font-semibold text-white leading-tight">Poom</div>
+              <div id="header-user-role" class="text-[10px] text-purple-400 leading-none">Google Account</div>
+            </div>
+            <i data-lucide="chevron-down" id="header-user-chevron" class="w-3.5 h-3.5 text-slate-400 ml-0.5 transition-transform duration-200"></i>
+          </button>
+
+          <!-- User Dropdown Popup (Popup ด้านล่างที่มีให้กด Setting กับ Logout) -->
+          <div id="header-user-dropdown" class="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-[#14172e]/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl p-2 hidden z-50 animate-modal-pop">
+            <!-- User Header Summary -->
+            <div class="px-3 py-2.5 border-b border-slate-800/80 mb-1">
+              <div class="text-xs font-bold text-white truncate" id="dropdown-user-name">Poom</div>
+              <div class="text-[10px] text-slate-400 truncate" id="dropdown-user-email">user@gmail.com</div>
+            </div>
+
+            <!-- Action Buttons: Setting & Logout -->
+            <div class="space-y-1">
+              <button id="dropdown-btn-settings" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-200 hover:text-white hover:bg-purple-600/20 hover:border-purple-500/40 border border-transparent transition-all text-left">
+                <i data-lucide="settings" class="w-4 h-4 text-purple-400"></i>
+                <span class="font-medium">Settings (การตั้งค่า)</span>
+              </button>
+              <button id="dropdown-btn-logout" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-rose-300 hover:text-rose-200 hover:bg-rose-500/15 hover:border-rose-500/30 border border-transparent transition-all text-left">
+                <i data-lucide="log-out" class="w-4 h-4 text-rose-400"></i>
+                <span class="font-medium">Logout (ออกจากระบบ)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </header>
 
-    <!-- 2. Main View Dynamic Container (Fade in entrance) -->
+    <!-- Main View Dynamic Container -->
     <main id="view-container" class="flex-1 px-4 sm:px-8 py-6 max-w-7xl w-full mx-auto animate-fade-in">
       <!-- Dynamic View Component loads here -->
     </main>
