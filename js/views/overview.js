@@ -36,19 +36,16 @@ function buildSparklinePath(values) {
 }
 
 // Calculate monthly income/expense totals and week-by-week sparkline points
-function calcSparklineData() {
+function calcSparklineData(metrics) {
   const txs = state.data.transactions || [];
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
-  const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-  const lastYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
   // Weekly buckets for sparkline (4 weeks this month)
   const incomeWeeks = [0, 0, 0, 0];
   const expenseWeeks = [0, 0, 0, 0];
   let incomeThisMonth = 0, expenseThisMonth = 0;
-  let incomeLastMonth = 0, expenseLastMonth = 0;
 
   txs.forEach(t => {
     const d = new Date(t.date);
@@ -58,25 +55,25 @@ function calcSparklineData() {
       const week = Math.min(3, Math.floor((d.getDate() - 1) / 7));
       if (t.type === 'income') { incomeWeeks[week] += amt; incomeThisMonth += amt; }
       else { expenseWeeks[week] += amt; expenseThisMonth += amt; }
-    } else if (d.getMonth() === lastMonth && d.getFullYear() === lastYear) {
-      if (t.type === 'income') incomeLastMonth += amt;
-      else expenseLastMonth += amt;
     }
   });
 
-  // % change vs last month
-  const incomeChange = incomeLastMonth > 0
-    ? Math.round(((incomeThisMonth - incomeLastMonth) / incomeLastMonth) * 100)
-    : (incomeThisMonth > 0 ? 100 : 0);
-  const expenseChange = expenseLastMonth > 0
-    ? Math.round(((expenseThisMonth - expenseLastMonth) / expenseLastMonth) * 100)
-    : (expenseThisMonth > 0 ? 100 : 0);
+  // Calculate dynamic percentages based directly on real income and expense
+  const totalInc = metrics?.totalIncome || incomeThisMonth;
+  const totalExp = metrics?.totalExpense || expenseThisMonth;
+  const netBal = Math.max(0, totalInc - totalExp);
+
+  // Income savings rate: % of income that remains saved
+  const savingsRate = totalInc > 0 ? Math.round((netBal / totalInc) * 100) : 0;
+
+  // Expense rate: % of income spent
+  const expenseRate = totalInc > 0 ? Math.round((totalExp / totalInc) * 100) : (totalExp > 0 ? 100 : 0);
 
   return {
     incomeWeeks, expenseWeeks,
-    incomeChange, expenseChange,
-    hasIncomeData: incomeThisMonth > 0,
-    hasExpenseData: expenseThisMonth > 0
+    savingsRate, expenseRate,
+    hasIncomeData: totalInc > 0,
+    hasExpenseData: totalExp > 0
   };
 }
 
@@ -120,7 +117,7 @@ function getProjectMeta(p) {
 
 export function renderOverview(container) {
   const metrics = state.getFinancialMetrics();
-  const spark = calcSparklineData();
+  const spark = calcSparklineData(metrics);
   const tasks = state.data.tasks.slice(0, 5);
   const goals = state.data.goals.slice(0, 4);
   const projects = state.data.projects.slice(0, 3);
@@ -152,11 +149,12 @@ export function renderOverview(container) {
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
             ${spark.hasIncomeData ? `
-              <div class="flex items-center gap-1 ${spark.incomeChange >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium">
-                <i data-lucide="${spark.incomeChange >= 0 ? 'trending-up' : 'trending-down'}" class="w-3.5 h-3.5"></i>
-                <span>${spark.incomeChange >= 0 ? '+' : ''}${spark.incomeChange}%</span>
+              <div class="flex items-center gap-1 text-emerald-400 font-medium">
+                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                <span>+${spark.savingsRate}%</span>
+                <span class="text-[10px] text-slate-400 font-normal">คงเหลือ</span>
               </div>
-              <svg class="w-24 h-6 ${spark.incomeChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}" viewBox="0 0 100 25" fill="none">
+              <svg class="w-24 h-6 text-emerald-400" viewBox="0 0 100 25" fill="none">
                 <path d="${buildSparklinePath(spark.incomeWeeks)}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
               </svg>
             ` : `
@@ -181,11 +179,12 @@ export function renderOverview(container) {
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
             ${spark.hasExpenseData ? `
-              <div class="flex items-center gap-1 ${spark.expenseChange <= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium">
-                <i data-lucide="${spark.expenseChange <= 0 ? 'trending-down' : 'trending-up'}" class="w-3.5 h-3.5"></i>
-                <span>${spark.expenseChange > 0 ? '+' : ''}${spark.expenseChange}%</span>
+              <div class="flex items-center gap-1 ${spark.expenseRate > 80 ? 'text-rose-400' : 'text-amber-400'} font-medium">
+                <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+                <span>${spark.expenseRate}%</span>
+                <span class="text-[10px] text-slate-400 font-normal">ของรายรับ</span>
               </div>
-              <svg class="w-24 h-6 ${spark.expenseChange <= 0 ? 'text-emerald-400' : 'text-rose-400'}" viewBox="0 0 100 25" fill="none">
+              <svg class="w-24 h-6 text-rose-400" viewBox="0 0 100 25" fill="none">
                 <path d="${buildSparklinePath(spark.expenseWeeks)}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
               </svg>
             ` : `
@@ -353,7 +352,16 @@ export function renderOverview(container) {
 
                 <div class="space-y-3.5">
                   ${goals.map(g => {
-                    const percent = Math.min(100, Math.round((g.current / g.target) * 100));
+                    const isFinanceGoal = !g.unit || g.unit === '฿' || g.category === 'finance';
+                    const effectiveCurrent = isFinanceGoal 
+                      ? Math.max(g.current || 0, Math.max(0, metrics.balance))
+                      : (g.current || 0);
+                    const percent = Math.min(100, Math.round((effectiveCurrent / g.target) * 100));
+                    const remaining = Math.max(0, g.target - effectiveCurrent);
+                    const remainingText = remaining === 0 
+                      ? 'สำเร็จตามเป้าหมายแล้ว! 🎉' 
+                      : `เหลืออีก ${g.unit === '฿' || !g.unit ? '฿ ' + remaining.toLocaleString() : remaining + ' ' + g.unit}`;
+
                     return `
                       <div class="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 hover:border-slate-700/80 transition-all hover:scale-[1.01]">
                         <div class="flex items-center justify-between mb-1.5">
@@ -368,7 +376,10 @@ export function renderOverview(container) {
                         <div class="progress-track mb-1">
                           <div class="progress-fill bg-gradient-to-r from-purple-500 to-cyan-400" style="width: ${percent}%;"></div>
                         </div>
-                        <div class="text-[10px] text-slate-400 text-right">${g.remainingText}</div>
+                        <div class="flex justify-between items-center text-[10px] text-slate-400">
+                          <span>${g.unit === '฿' || !g.unit ? '฿ ' + effectiveCurrent.toLocaleString() : effectiveCurrent + ' ' + g.unit} / ${g.unit === '฿' || !g.unit ? '฿ ' + g.target.toLocaleString() : g.target + ' ' + g.unit}</span>
+                          <span>${remainingText}</span>
+                        </div>
                       </div>
                     `;
                   }).join('')}

@@ -4,8 +4,13 @@ import { formatMoney, triggerConfetti, showToast } from '../utils.js';
 import { showConfirmDialog } from '../modals.js';
 
 export function renderGoals(container) {
+  const metrics = state.getFinancialMetrics();
   const goals = state.data.goals;
-  const completedGoals = goals.filter(g => g.current >= g.target).length;
+  const completedGoals = goals.filter(g => {
+    const isFinanceGoal = !g.unit || g.unit === '฿' || g.category === 'finance';
+    const effectiveCurrent = isFinanceGoal ? Math.max(g.current || 0, Math.max(0, metrics.balance)) : (g.current || 0);
+    return effectiveCurrent >= g.target;
+  }).length;
 
   container.innerHTML = `
     <div class="space-y-6 pb-12">
@@ -59,7 +64,15 @@ export function renderGoals(container) {
       <!-- Goals Grid Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-item stagger-3">
         ${goals.map(g => {
-          const percent = Math.min(100, Math.round((g.current / g.target) * 100));
+          const isFinanceGoal = !g.unit || g.unit === '฿' || g.category === 'finance';
+          const effectiveCurrent = isFinanceGoal 
+            ? Math.max(g.current || 0, Math.max(0, metrics.balance))
+            : (g.current || 0);
+          const percent = Math.min(100, Math.round((effectiveCurrent / g.target) * 100));
+          const remaining = Math.max(0, g.target - effectiveCurrent);
+          const remainingText = remaining === 0 
+            ? 'สำเร็จตามเป้าหมายแล้ว! 🎉' 
+            : `เหลืออีก ${g.unit === '฿' || !g.unit ? '฿ ' + remaining.toLocaleString() : remaining + ' ' + g.unit}`;
           const isDone = percent >= 100;
           return `
             <div class="glass-panel glass-panel-hover p-5 flex flex-col justify-between space-y-4 relative overflow-hidden group">
@@ -75,7 +88,7 @@ export function renderGoals(container) {
                     </div>
                     <div>
                       <h3 class="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">${g.title}</h3>
-                      <span class="text-[11px] text-slate-400">${g.remainingText}</span>
+                      <span class="text-[11px] text-slate-400">${remainingText}</span>
                     </div>
                   </div>
                   <div class="text-right">
@@ -88,8 +101,8 @@ export function renderGoals(container) {
 
                 <div class="mt-4">
                   <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-medium">
-                    <span>${g.unit === '฿' ? formatMoney(g.current) : `${g.current} ${g.unit}`}</span>
-                    <span>${g.unit === '฿' ? formatMoney(g.target) : `${g.target} ${g.unit}`}</span>
+                    <span>${g.unit === '฿' || !g.unit ? formatMoney(effectiveCurrent) : `${effectiveCurrent} ${g.unit}`}</span>
+                    <span>${g.unit === '฿' || !g.unit ? formatMoney(g.target) : `${g.target} ${g.unit}`}</span>
                   </div>
                   <div class="progress-track">
                     <div class="progress-fill ${isDone ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-purple-500 to-cyan-400'}" style="width: ${percent}%;"></div>

@@ -131,18 +131,19 @@ class Application {
     } else {
       if (sidebar) sidebar.style.display = '';
       if (header) header.style.display = '';
-      this.viewContainer.classList.add('max-w-7xl', 'px-4', 'sm:px-8', 'py-6');
-      this.viewContainer.classList.remove('p-0');
+      this.viewContainer.classList.add('max-w-[1720px]', '2xl:max-w-[1850px]', 'px-4', 'sm:px-8', 'xl:px-12', 'py-6');
+      this.viewContainer.classList.remove('max-w-7xl', 'p-0');
       if (mainWrap) {
         mainWrap.classList.add('flex-1');
         mainWrap.classList.remove('w-full');
       }
     }
 
-    // Trigger smooth fade-in entrance
+    // Smooth subtle view transition (Zero reflow jank)
     this.viewContainer.classList.remove('animate-fade-in');
-    void this.viewContainer.offsetWidth;
-    this.viewContainer.classList.add('animate-fade-in');
+    requestAnimationFrame(() => {
+      this.viewContainer.classList.add('animate-fade-in');
+    });
 
     // Highlight active sidebar item
     document.querySelectorAll('.nav-item').forEach(el => {

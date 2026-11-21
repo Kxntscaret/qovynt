@@ -251,31 +251,29 @@ body {
 }
 
 /* ==========================================================================
-   Page Entrance Fade In & Stagger Animations
+   Page Entrance Fade In & Stagger Animations (Silky Smooth SPA Transition)
    ========================================================================== */
-@keyframes dashboardEntrance {
+@keyframes viewFade {
   0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.99);
+    opacity: 0.88;
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
 .animate-fade-in {
-  animation: dashboardEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: viewFade 0.15s ease-out forwards;
 }
 
 .stagger-item {
-  animation: dashboardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: viewFade 0.15s ease-out both;
 }
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.10s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.20s; }
-.stagger-5 { animation-delay: 0.25s; }
+.stagger-1 { animation-delay: 0.02s; }
+.stagger-2 { animation-delay: 0.04s; }
+.stagger-3 { animation-delay: 0.06s; }
+.stagger-4 { animation-delay: 0.08s; }
+.stagger-5 { animation-delay: 0.10s; }
 
 /* ==========================================================================
    Sidebar Navigation Smooth Transition

@@ -66,7 +66,9 @@ class StateStore {
       this.currentView = viewName;
       playAudioFeedback('click');
       this.notify();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.scrollY > 100) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
     }
   }
 
@@ -247,8 +249,10 @@ class StateStore {
     });
 
     const balance = totalIncome - totalExpense;
-    const savingsTarget = this.data.profile?.monthlySavingsTarget || 10000;
-    const savingsPercent = Math.min(100, Math.max(0, Math.round((balance / savingsTarget) * 100)));
+    // Link savings target to active financial goal if available, or fallback to profile
+    const financeGoals = (this.data.goals || []).filter(g => !g.unit || g.unit === '฿' || g.category === 'finance');
+    const savingsTarget = financeGoals.length > 0 ? Number(financeGoals[0].target) : (this.data.profile?.monthlySavingsTarget || 10000);
+    const savingsPercent = Math.min(100, Math.max(0, Math.round((Math.max(0, balance) / savingsTarget) * 100)));
 
     return {
       totalIncome,
