@@ -53,15 +53,18 @@ class Application {
     });
 
     // Listen to Auth changes — auto-navigate on login/logout + reload user data
-    auth.subscribe((user) => {
+    auth.subscribe(async (user) => {
       this.updateUserProfile(user);
       if (!user) {
+        state.clearData();
         state.setView('auth');
-      } else if (state.currentView === 'auth') {
-        // Reload user-scoped data then navigate to overview
-        state.reloadForUser().then(() => {
+      } else {
+        // Explicitly sync current user into db layer and reload their isolated data
+        db.setCurrentUser(user.id);
+        await state.reloadForUser();
+        if (state.currentView === 'auth') {
           state.setView('overview');
-        });
+        }
       }
     });
 

@@ -327,30 +327,15 @@ class DatabaseManager {
 
   // Set current user for per-user data isolation
   setCurrentUser(userId) {
-    if (this.currentUserId === userId) return;
-    const isNew = !this.currentUserId && userId;
-    this.currentUserId = userId;
-    if (isNew) this._migrateOldData(userId);
+    this.currentUserId = userId || null;
   }
 
-  // One-time migration: copy old shared data to this user's namespace
-  _migrateOldData(userId) {
-    const collections = ['transactions', 'tasks', 'calendarEvents', 'goals', 'notes', 'projects', 'habits', 'profile'];
-    for (const name of collections) {
-      const userKey = CONFIG.STORAGE_KEY_PREFIX + userId + '_' + name;
-      const oldKey = CONFIG.STORAGE_KEY_PREFIX + name;
-      if (!localStorage.getItem(userKey) && localStorage.getItem(oldKey)) {
-        localStorage.setItem(userKey, localStorage.getItem(oldKey));
-      }
-    }
-  }
-
-  // Per-user storage key
+  // Per-user storage key (strictly isolated per user ID)
   _getStorageKey(name) {
     if (this.currentUserId) {
       return CONFIG.STORAGE_KEY_PREFIX + this.currentUserId + '_' + name;
     }
-    return CONFIG.STORAGE_KEY_PREFIX + name;
+    return CONFIG.STORAGE_KEY_PREFIX + 'guest_' + name;
   }
 
   initSupabase() {
@@ -373,24 +358,35 @@ class DatabaseManager {
 
   // Retrieve whole collection
   async getCollection(name) {
-    if (this.isCloudActive) {
+    if (!this.currentUserId) {
+      return [];
+    }
+
+    if (this.isCloudActive && this.supabase) {
       try {
-        const { data, error } = await this.supabase.from(name).select('*');
-        if (!error && data) return data;
+        const { data, error } = await this.supabase
+          .from(name)
+          .select('*')
+          .eq('user_id', this.currentUserId);
+        if (!error && Array.isArray(data)) return data;
       } catch (e) {
         console.warn(`Supabase get error for ${name}, falling back to local`, e);
       }
     }
 
-    // Local fallback
+    // Local fallback - strictly isolated for this user
     const key = this._getStorageKey(name);
     const raw = localStorage.getItem(key);
     if (!raw) {
-      // New user: start with empty data (no demo/seed)
       return [];
     }
     try {
-      return JSON.parse(raw);
+      const items = JSON.parse(raw);
+      if (Array.isArray(items)) {
+        // Only return items created by this specific user
+        return items.filter(item => item.user_id === this.currentUserId);
+      }
+      return [];
     } catch (e) {
       return [];
     }
@@ -401,8 +397,12 @@ class DatabaseManager {
     if (!item.id) {
       item.id = uuidv4();
     }
+    // Tag item with current user ID
+    if (this.currentUserId) {
+      item.user_id = this.currentUserId;
+    }
 
-    if (this.isCloudActive) {
+    if (this.isCloudActive && this.supabase && this.currentUserId) {
       try {
         await this.supabase.from(collectionName).upsert(item);
       } catch (e) {
@@ -411,32 +411,36 @@ class DatabaseManager {
     }
 
     // Always update local cache
-    const key = this._getStorageKey(collectionName);
-    let items = await this.getCollection(collectionName);
-    const index = items.findIndex(i => i.id === item.id);
-    if (index >= 0) {
-      items[index] = { ...items[index], ...item };
-    } else {
-      items.unshift(item);
+    if (this.currentUserId) {
+      const key = this._getStorageKey(collectionName);
+      let items = await this.getCollection(collectionName);
+      const index = items.findIndex(i => i.id === item.id);
+      if (index >= 0) {
+        items[index] = { ...items[index], ...item };
+      } else {
+        items.unshift(item);
+      }
+      localStorage.setItem(key, JSON.stringify(items));
     }
-    localStorage.setItem(key, JSON.stringify(items));
     return item;
   }
 
   // Delete item from collection
   async deleteItem(collectionName, id) {
-    if (this.isCloudActive) {
+    if (this.isCloudActive && this.supabase && this.currentUserId) {
       try {
-        await this.supabase.from(collectionName).delete().eq('id', id);
+        await this.supabase.from(collectionName).delete().eq('id', id).eq('user_id', this.currentUserId);
       } catch (e) {
         console.warn('Cloud delete error', e);
       }
     }
 
-    const key = this._getStorageKey(collectionName);
-    let items = await this.getCollection(collectionName);
-    items = items.filter(i => i.id !== id);
-    localStorage.setItem(key, JSON.stringify(items));
+    if (this.currentUserId) {
+      const key = this._getStorageKey(collectionName);
+      let items = await this.getCollection(collectionName);
+      items = items.filter(i => i.id !== id);
+      localStorage.setItem(key, JSON.stringify(items));
+    }
     return true;
   }
 

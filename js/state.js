@@ -70,7 +70,22 @@ class StateStore {
     this.listeners.forEach(l => l(this));
   }
 
-  // Reload all data for the current user (called on account switch)
+  // Clear state in memory on logout
+  clearData() {
+    this.data = {
+      profile: null,
+      transactions: [],
+      tasks: [],
+      calendarEvents: [],
+      goals: [],
+      notes: [],
+      projects: [],
+      habits: []
+    };
+    this.notify();
+  }
+
+  // Reload all data for the current user (called on account switch or sign in)
   async reloadForUser() {
     await this.loadAll();
     this.notify();
