@@ -5,6 +5,8 @@ import { formatMoney, formatThaiDateShort, formatThaiDateTime, triggerConfetti, 
 let financeLineChart = null;
 let expenseDonutChart = null;
 let currentTxTab = 'all';
+let miniCalViewMonth = new Date().getMonth();
+let miniCalViewYear = new Date().getFullYear();
 
 // Helper to map category to realistic rich icon & palette matching MyLife reference
 function getTxCategoryMeta(category, type) {
@@ -478,29 +480,51 @@ function renderMiniCalendar() {
   if (!container) return;
 
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
   const todayDate = now.getDate();
+  const todayMonth = now.getMonth();
+  const todayYear = now.getFullYear();
 
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const viewMonth = miniCalViewMonth;
+  const viewYear = miniCalViewYear;
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  // Build set of days that have events this month
+  const eventDays = new Set();
+  (state.data.calendarEvents || []).forEach(ev => {
+    const d = new Date(ev.date || ev.start || ev.startDate || '');
+    if (!isNaN(d) && d.getMonth() === viewMonth && d.getFullYear() === viewYear) {
+      eventDays.add(d.getDate());
+    }
+  });
+
+  // Update title
+  const titleEl = document.getElementById('mini-cal-title');
+  if (titleEl) {
+    const monthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    titleEl.textContent = `${monthNames[viewMonth]} ${viewYear + 543}`;
+  }
 
   let html = '';
   for (let i = 0; i < firstDay; i++) {
     html += `<span class="py-1 text-slate-700"></span>`;
   }
   for (let d = 1; d <= totalDays; d++) {
-    const isToday = d === todayDate;
+    const isToday = d === todayDate && viewMonth === todayMonth && viewYear === todayYear;
+    const hasEvent = eventDays.has(d);
     if (isToday) {
       html += `
-        <span class="py-1 w-7 h-7 mx-auto rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shadow-lg shadow-purple-600/40 transition-transform hover:scale-110">
+        <span class="relative py-1 w-7 h-7 mx-auto rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shadow-lg shadow-purple-600/40 transition-transform hover:scale-110">
           ${d}
+          ${hasEvent ? '<span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-400"></span>' : ''}
         </span>
       `;
     } else {
       html += `
-        <span class="py-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer transition-colors flex items-center justify-center">
+        <span class="relative py-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg cursor-pointer transition-colors flex items-center justify-center">
           ${d}
+          ${hasEvent ? '<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-400"></span>' : ''}
         </span>
       `;
     }
@@ -517,113 +541,180 @@ function initOverviewCharts(metrics) {
   const lineCanvas = document.getElementById('overview-finance-line');
   const donutCanvas = document.getElementById('overview-expense-donut');
 
+  // Aggregate real transactions by day of current month
+  const txs = state.data.transactions;
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  const incomeByDay = new Array(daysInMonth).fill(0);
+  const expenseByDay = new Array(daysInMonth).fill(0);
+
+  txs.forEach(t => {
+    const d = new Date(t.date);
+    if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return;
+    const dayIdx = d.getDate() - 1;
+    if (t.type === 'income') incomeByDay[dayIdx] += Number(t.amount) || 0;
+    else expenseByDay[dayIdx] += Number(t.amount) || 0;
+  });
+
+  // Build cumulative arrays
+  const incomeCum = [];
+  const expenseCum = [];
+  let runInc = 0, runExp = 0;
+  incomeByDay.forEach((v, i) => {
+    runInc += v; runExp += expenseByDay[i];
+    incomeCum.push(runInc);
+    expenseCum.push(runExp);
+  });
+
+  const hasLineData = runInc > 0 || runExp > 0;
+
+  // Build sparse labels (every 5 days)
+  const lineLabels = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    return (day === 1 || day % 5 === 0) ? String(day) : '';
+  });
+
   if (lineCanvas && window.Chart) {
     const ctx = lineCanvas.getContext('2d');
-    financeLineChart = new window.Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['1', '5', '10', '15', '20', '25', '30'],
-        datasets: [
-          {
-            label: 'รายรับ',
-            data: [3000, 3000, 4500, 14000, 14000, 17000, 17000],
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
-            borderWidth: 2.5,
-            tension: 0.4,
-            fill: true,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            pointBackgroundColor: '#10b981'
-          },
-          {
-            label: 'รายจ่าย',
-            data: [600, 1490, 2690, 3040, 3680, 5250, 5250],
-            borderColor: '#f43f5e',
-            backgroundColor: 'rgba(244, 63, 94, 0.08)',
-            borderWidth: 2.5,
-            tension: 0.4,
-            fill: true,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            pointBackgroundColor: '#f43f5e'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-          duration: 1600,
-          easing: 'easeInOutQuart'
+
+    if (!hasLineData) {
+      lineCanvas.style.display = 'none';
+      if (!lineCanvas.parentElement.querySelector('.chart-empty-state')) {
+        const empty = document.createElement('div');
+        empty.className = 'chart-empty-state flex flex-col items-center justify-center h-full gap-2 text-slate-600 text-xs';
+        empty.innerHTML = `<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><p>ยังไม่มีธุรกรรมเดือนนี้</p>`;
+        lineCanvas.parentElement.appendChild(empty);
+      }
+    } else {
+      lineCanvas.style.display = '';
+      lineCanvas.parentElement.querySelector('.chart-empty-state')?.remove();
+      financeLineChart = new window.Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: lineLabels,
+          datasets: [
+            {
+              label: 'รายรับ',
+              data: incomeCum,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              borderWidth: 2.5,
+              tension: 0.4,
+              fill: true,
+              pointRadius: (ctx) => incomeCum[ctx.dataIndex] > 0 ? 3 : 0,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#10b981'
+            },
+            {
+              label: 'รายจ่าย',
+              data: expenseCum,
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.08)',
+              borderWidth: 2.5,
+              tension: 0.4,
+              fill: true,
+              pointRadius: (ctx) => expenseCum[ctx.dataIndex] > 0 ? 3 : 0,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#f43f5e'
+            }
+          ]
         },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e213e',
-            borderColor: 'rgba(147, 130, 245, 0.2)',
-            borderWidth: 1,
-            titleColor: '#fff',
-            bodyColor: '#cbd5e1'
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: '#64748b', font: { size: 10 } }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1600,
+            easing: 'easeInOutQuart'
           },
-          y: {
-            grid: { color: 'rgba(255, 255, 255, 0.04)' },
-            ticks: {
-              color: '#64748b',
-              font: { size: 10 },
-              callback: value => value >= 1000 ? (value / 1000) + 'k' : value
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e213e',
+              borderColor: 'rgba(147, 130, 245, 0.2)',
+              borderWidth: 1,
+              titleColor: '#fff',
+              bodyColor: '#cbd5e1',
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ฿${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#64748b',
+                font: { size: 10 },
+                callback: value => value >= 1000 ? (value / 1000) + 'k' : value
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
   }
 
   if (donutCanvas && window.Chart) {
     const ctx = donutCanvas.getContext('2d');
     const categories = Object.keys(metrics.categoryExpenses);
     const dataValues = Object.values(metrics.categoryExpenses);
+    const hasDonutData = dataValues.length > 0 && dataValues.some(v => v > 0);
     const colors = ['#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#10b981', '#64748b'];
 
-    expenseDonutChart = new window.Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: categories.length ? categories : ['อาหาร', 'เดินทาง', 'ช้อปปิ้ง', 'การเรียน', 'บันเทิง', 'อื่น ๆ'],
-        datasets: [{
-          data: dataValues.length ? dataValues : [1680, 945, 788, 630, 525, 682],
-          backgroundColor: colors,
-          borderWidth: 0,
-          hoverOffset: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '72%',
-        animation: {
-          animateRotate: true,
-          animateScale: true,
-          duration: 1400,
-          easing: 'easeOutQuart'
+    if (!hasDonutData) {
+      donutCanvas.style.display = 'none';
+      const parent = donutCanvas.parentElement;
+      if (!parent.querySelector('.donut-empty-state')) {
+        const empty = document.createElement('div');
+        empty.className = 'donut-empty-state flex flex-col items-center justify-center h-full gap-2 text-slate-600 text-xs';
+        empty.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01"/></svg><p>ยังไม่มีรายจ่าย</p>`;
+        parent.appendChild(empty);
+      }
+    } else {
+      donutCanvas.style.display = '';
+      donutCanvas.parentElement.querySelector('.donut-empty-state')?.remove();
+      expenseDonutChart = new window.Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: categories,
+          datasets: [{
+            data: dataValues,
+            backgroundColor: colors,
+            borderWidth: 0,
+            hoverOffset: 6
+          }]
         },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#1e213e',
-            borderColor: 'rgba(147, 130, 245, 0.2)',
-            borderWidth: 1,
-            titleColor: '#fff',
-            bodyColor: '#cbd5e1'
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1400,
+            easing: 'easeOutQuart'
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1e213e',
+              borderColor: 'rgba(147, 130, 245, 0.2)',
+              borderWidth: 1,
+              titleColor: '#fff',
+              bodyColor: '#cbd5e1',
+              callbacks: {
+                label: ctx => `${ctx.label}: ฿${ctx.parsed.toLocaleString()}`
+              }
+            }
           }
         }
-      }
-    });
+      });
+    }
   }
 }
 
@@ -633,6 +724,18 @@ function bindOverviewEvents(container, metrics) {
   container.querySelector('#btn-view-all-projects')?.addEventListener('click', () => state.setView('projects'));
   container.querySelector('#btn-view-all-tasks')?.addEventListener('click', () => state.setView('tasks'));
   container.querySelector('#btn-view-all-calendar')?.addEventListener('click', () => state.setView('calendar'));
+
+  // Mini calendar navigation
+  container.querySelector('#cal-prev-btn')?.addEventListener('click', () => {
+    miniCalViewMonth--;
+    if (miniCalViewMonth < 0) { miniCalViewMonth = 11; miniCalViewYear--; }
+    renderMiniCalendar();
+  });
+  container.querySelector('#cal-next-btn')?.addEventListener('click', () => {
+    miniCalViewMonth++;
+    if (miniCalViewMonth > 11) { miniCalViewMonth = 0; miniCalViewYear++; }
+    renderMiniCalendar();
+  });
 
   container.querySelector('#quick-btn-tx')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('open-modal', { detail: { modal: 'add-transaction' } }));

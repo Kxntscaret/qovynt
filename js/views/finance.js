@@ -200,6 +200,45 @@ function initFinanceCharts() {
   const canvas = document.getElementById('finance-detail-chart');
   if (!canvas || !window.Chart) return;
 
+  // Aggregate real transactions by week of current month
+  const txs = state.data.transactions;
+  const now = new Date();
+  const incomeByWeek = [0, 0, 0, 0];
+  const expenseByWeek = [0, 0, 0, 0];
+
+  txs.forEach(t => {
+    const d = new Date(t.date);
+    if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return;
+    const week = Math.min(3, Math.floor((d.getDate() - 1) / 7));
+    if (t.type === 'income') incomeByWeek[week] += Number(t.amount) || 0;
+    else expenseByWeek[week] += Number(t.amount) || 0;
+  });
+
+  const hasData = incomeByWeek.some(v => v > 0) || expenseByWeek.some(v => v > 0);
+
+  // Show empty state if no transactions this month
+  if (!hasData) {
+    canvas.style.display = 'none';
+    const parent = canvas.parentElement;
+    if (!parent.querySelector('.chart-empty-state')) {
+      const empty = document.createElement('div');
+      empty.className = 'chart-empty-state flex flex-col items-center justify-center h-full gap-3 text-slate-500';
+      empty.innerHTML = `
+        <svg class="w-12 h-12 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p class="text-sm">ยังไม่มีธุรกรรมเดือนนี้</p>
+        <p class="text-xs text-slate-600">เพิ่มรายรับหรือรายจ่ายเพื่อดูกราฟ</p>
+      `;
+      parent.appendChild(empty);
+    }
+    return;
+  }
+
+  // Remove empty state if exists
+  canvas.style.display = '';
+  canvas.parentElement.querySelector('.chart-empty-state')?.remove();
+
   const ctx = canvas.getContext('2d');
   financeDetailChart = new window.Chart(ctx, {
     type: 'bar',
@@ -208,14 +247,18 @@ function initFinanceCharts() {
       datasets: [
         {
           label: 'รายรับ',
-          data: [3000, 9500, 0, 0],
-          backgroundColor: '#10b981',
+          data: incomeByWeek,
+          backgroundColor: 'rgba(16,185,129,0.85)',
+          borderColor: '#10b981',
+          borderWidth: 1,
           borderRadius: 8
         },
         {
           label: 'รายจ่าย',
-          data: [1490, 1550, 990, 1220],
-          backgroundColor: '#f43f5e',
+          data: expenseByWeek,
+          backgroundColor: 'rgba(244,63,94,0.85)',
+          borderColor: '#f43f5e',
+          borderWidth: 1,
           borderRadius: 8
         }
       ]
@@ -231,6 +274,16 @@ function initFinanceCharts() {
         legend: {
           position: 'top',
           labels: { color: '#94a3b8', font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1e213e',
+          borderColor: 'rgba(147,130,245,0.3)',
+          borderWidth: 1,
+          titleColor: '#fff',
+          bodyColor: '#cbd5e1',
+          callbacks: {
+            label: ctx => `฿ ${ctx.parsed.y.toLocaleString()}`
+          }
         }
       },
       scales: {
@@ -239,8 +292,11 @@ function initFinanceCharts() {
           ticks: { color: '#64748b' }
         },
         y: {
-          grid: { color: 'rgba(255, 255, 255, 0.04)' },
-          ticks: { color: '#64748b' }
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#64748b',
+            callback: v => v >= 1000 ? (v / 1000) + 'k' : v
+          }
         }
       }
     }
