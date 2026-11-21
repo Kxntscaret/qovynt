@@ -4,6 +4,7 @@ import { auth } from './auth.js';
 import { db } from './db.js';
 import { setupModals, showConfirmDialog } from './modals.js';
 import { formatThaiDateFull, getDynamicGreeting, showToast, playAudioFeedback } from './utils.js';
+import { initParticles } from './particles.js?v=20261121_03';
 
 // Import Views
 import { renderOverview } from './views/overview.js?v=20261121_03';
@@ -42,6 +43,7 @@ class Application {
     this.setupCommandPalette();
     this.setupMobileMenu();
     this.setupCursorGlow();
+    initParticles();
 
     // Listen to reactive state changes
     state.subscribe(() => {
