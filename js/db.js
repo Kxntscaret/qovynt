@@ -386,15 +386,13 @@ class DatabaseManager {
     const key = this._getStorageKey(name);
     const raw = localStorage.getItem(key);
     if (!raw) {
-      // Seed initial data
-      const initialData = DEFAULT_SEED[name] || [];
-      localStorage.setItem(key, JSON.stringify(initialData));
-      return JSON.parse(JSON.stringify(initialData));
+      // New user: start with empty data (no demo/seed)
+      return [];
     }
     try {
       return JSON.parse(raw);
     } catch (e) {
-      return DEFAULT_SEED[name] || [];
+      return [];
     }
   }
 
@@ -448,7 +446,16 @@ class DatabaseManager {
     if (raw) {
       try { return JSON.parse(raw); } catch (e) {}
     }
-    return DEFAULT_SEED.profile;
+    // New user: minimal empty profile
+    return {
+      id: 'user_default',
+      name: '',
+      title: '',
+      email: '',
+      avatar: '',
+      quote: '',
+      monthlySavingsTarget: 10000
+    };
   }
 
   async saveProfile(profile) {
