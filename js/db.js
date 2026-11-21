@@ -321,7 +321,36 @@ class DatabaseManager {
   constructor() {
     this.supabase = null;
     this.isCloudActive = false;
+    this.currentUserId = null;
     this.initSupabase();
+  }
+
+  // Set current user for per-user data isolation
+  setCurrentUser(userId) {
+    if (this.currentUserId === userId) return;
+    const isNew = !this.currentUserId && userId;
+    this.currentUserId = userId;
+    if (isNew) this._migrateOldData(userId);
+  }
+
+  // One-time migration: copy old shared data to this user's namespace
+  _migrateOldData(userId) {
+    const collections = ['transactions', 'tasks', 'calendarEvents', 'goals', 'notes', 'projects', 'habits', 'profile'];
+    for (const name of collections) {
+      const userKey = CONFIG.STORAGE_KEY_PREFIX + userId + '_' + name;
+      const oldKey = CONFIG.STORAGE_KEY_PREFIX + name;
+      if (!localStorage.getItem(userKey) && localStorage.getItem(oldKey)) {
+        localStorage.setItem(userKey, localStorage.getItem(oldKey));
+      }
+    }
+  }
+
+  // Per-user storage key
+  _getStorageKey(name) {
+    if (this.currentUserId) {
+      return CONFIG.STORAGE_KEY_PREFIX + this.currentUserId + '_' + name;
+    }
+    return CONFIG.STORAGE_KEY_PREFIX + name;
   }
 
   initSupabase() {
@@ -354,7 +383,7 @@ class DatabaseManager {
     }
 
     // Local fallback
-    const key = `${CONFIG.STORAGE_KEY_PREFIX}${name}`;
+    const key = this._getStorageKey(name);
     const raw = localStorage.getItem(key);
     if (!raw) {
       // Seed initial data
@@ -384,7 +413,7 @@ class DatabaseManager {
     }
 
     // Always update local cache
-    const key = `${CONFIG.STORAGE_KEY_PREFIX}${collectionName}`;
+    const key = this._getStorageKey(collectionName);
     let items = await this.getCollection(collectionName);
     const index = items.findIndex(i => i.id === item.id);
     if (index >= 0) {
@@ -406,7 +435,7 @@ class DatabaseManager {
       }
     }
 
-    const key = `${CONFIG.STORAGE_KEY_PREFIX}${collectionName}`;
+    const key = this._getStorageKey(collectionName);
     let items = await this.getCollection(collectionName);
     items = items.filter(i => i.id !== id);
     localStorage.setItem(key, JSON.stringify(items));
@@ -415,7 +444,7 @@ class DatabaseManager {
 
   // Get current user profile
   async getProfile() {
-    const raw = localStorage.getItem(`${CONFIG.STORAGE_KEY_PREFIX}profile`);
+    const raw = localStorage.getItem(this._getStorageKey('profile'));
     if (raw) {
       try { return JSON.parse(raw); } catch (e) {}
     }
@@ -423,7 +452,7 @@ class DatabaseManager {
   }
 
   async saveProfile(profile) {
-    localStorage.setItem(`${CONFIG.STORAGE_KEY_PREFIX}profile`, JSON.stringify(profile));
+    localStorage.setItem(this._getStorageKey('profile'), JSON.stringify(profile));
     if (this.isCloudActive && this.supabase) {
       try {
         await this.supabase.from('profiles').upsert(profile);
@@ -435,7 +464,7 @@ class DatabaseManager {
   // Reset to original seed data
   resetAll() {
     Object.keys(DEFAULT_SEED).forEach(name => {
-      localStorage.setItem(`${CONFIG.STORAGE_KEY_PREFIX}${name}`, JSON.stringify(DEFAULT_SEED[name]));
+      localStorage.setItem(this._getStorageKey(name), JSON.stringify(DEFAULT_SEED[name]));
     });
   }
 
@@ -443,7 +472,7 @@ class DatabaseManager {
   exportJSON() {
     const dump = {};
     Object.keys(DEFAULT_SEED).forEach(name => {
-      const raw = localStorage.getItem(`${CONFIG.STORAGE_KEY_PREFIX}${name}`);
+      const raw = localStorage.getItem(this._getStorageKey(name));
       dump[name] = raw ? JSON.parse(raw) : DEFAULT_SEED[name];
     });
     return JSON.stringify(dump, null, 2);
@@ -454,7 +483,7 @@ class DatabaseManager {
     try {
       const parsed = JSON.parse(jsonString);
       Object.keys(parsed).forEach(name => {
-        localStorage.setItem(`${CONFIG.STORAGE_KEY_PREFIX}${name}`, JSON.stringify(parsed[name]));
+        localStorage.setItem(this._getStorageKey(name), JSON.stringify(parsed[name]));
       });
       return true;
     } catch (e) {

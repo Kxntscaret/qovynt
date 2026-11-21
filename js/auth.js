@@ -43,6 +43,7 @@ class AuthManager {
       createdAt: u.created_at || new Date().toISOString()
     };
     this.currentUser = userObj;
+    db.setCurrentUser(userObj.id);
     localStorage.setItem('qovynt_session', JSON.stringify(userObj));
     this._saveUserToDirectory(userObj);
     this.notify();
@@ -53,6 +54,7 @@ class AuthManager {
     if (raw) {
       try {
         this.currentUser = JSON.parse(raw);
+        if (this.currentUser?.id) db.setCurrentUser(this.currentUser.id);
       } catch (e) {
         this.currentUser = null;
       }
@@ -138,6 +140,7 @@ class AuthManager {
       };
 
       this.currentUser = googleUser;
+      db.setCurrentUser(googleUser.id);
       localStorage.setItem('qovynt_session', JSON.stringify(googleUser));
 
       // Save user to account directory
@@ -177,6 +180,7 @@ class AuthManager {
           provider: 'supabase'
         };
         this.currentUser = user;
+        db.setCurrentUser(user.id);
         localStorage.setItem('qovynt_session', JSON.stringify(user));
         showToast(`ยินดีต้อนรับกลับ, ${user.name}`, 'success');
         this.notify();
@@ -211,6 +215,7 @@ class AuthManager {
     };
 
     this.currentUser = sessionUser;
+    db.setCurrentUser(sessionUser.id);
     localStorage.setItem('qovynt_session', JSON.stringify(sessionUser));
     showToast(`เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับคุณ ${sessionUser.name}`, 'success');
     this.notify();
@@ -285,6 +290,7 @@ class AuthManager {
     };
 
     this.currentUser = sessionUser;
+    db.setCurrentUser(sessionUser.id);
     localStorage.setItem('qovynt_session', JSON.stringify(sessionUser));
     showToast(`ลงทะเบียนและสร้างบัญชีเรียบร้อย! สวัสดีคุณ ${sessionUser.name}`, 'success');
     this.notify();
@@ -299,6 +305,7 @@ class AuthManager {
       } catch (e) {}
     }
     this.currentUser = null;
+    db.setCurrentUser(null);
     localStorage.removeItem('qovynt_session');
     showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
     this.notify();

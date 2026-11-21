@@ -70,6 +70,12 @@ class StateStore {
     this.listeners.forEach(l => l(this));
   }
 
+  // Reload all data for the current user (called on account switch)
+  async reloadForUser() {
+    await this.loadAll();
+    this.notify();
+  }
+
   setView(viewName) {
     if (this.currentView !== viewName) {
       this.currentView = viewName;
