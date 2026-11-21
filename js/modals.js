@@ -1,7 +1,100 @@
-// Modal dialog controller for QOVYNT
+// Modal and Decision Dialog controller for QOVYNT
 import { state } from './state.js';
 import { showToast, formatMoney } from './utils.js';
 
+// =========================================================================
+// Modern Glassmorphic Decision / Confirmation Dialog System
+// Replaces old native browser confirm() with an ultra-sleek UI
+// =========================================================================
+export function showConfirmDialog({
+  title = 'ยืนยันการตัดสินใจ',
+  message = 'คุณแน่ใจว่าต้องการดำเนินการนี้ใช่หรือไม่?',
+  confirmText = 'ยืนยันการทำรายการ',
+  cancelText = 'ยกเลิก',
+  type = 'danger', // 'danger' | 'warning' | 'info'
+  icon = null
+}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('modal-overlay');
+    const modalContent = document.getElementById('modal-content');
+
+    let badgeBg = 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+    let btnGrad = 'bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 shadow-rose-600/40';
+    let defaultIcon = 'alert-triangle';
+
+    if (type === 'warning') {
+      badgeBg = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      btnGrad = 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/40';
+      defaultIcon = 'shield-alert';
+    } else if (type === 'info') {
+      badgeBg = 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      btnGrad = 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-600/40';
+      defaultIcon = 'help-circle';
+    }
+
+    const activeIcon = icon || defaultIcon;
+
+    modalContent.innerHTML = `
+      <div class="glass-panel p-6 sm:p-7 rounded-3xl w-full max-w-sm sm:max-w-md border border-purple-500/30 shadow-2xl animate-modal-pop relative overflow-hidden">
+        <!-- Ambient glow behind modal -->
+        <div class="absolute -top-16 -right-16 w-36 h-36 ${type === 'danger' ? 'bg-rose-600/20' : 'bg-purple-600/20'} rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${badgeBg} shadow-lg">
+            <i data-lucide="${activeIcon}" class="w-6 h-6"></i>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-bold text-white tracking-tight">${title}</h3>
+            <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">${message}</p>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-end gap-3">
+          <button id="dialog-btn-cancel" class="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-all">
+            ${cancelText}
+          </button>
+          <button id="dialog-btn-confirm" class="px-5 py-2.5 rounded-xl ${btnGrad} text-white text-xs font-semibold shadow-lg transition-all hover:scale-105 active:scale-95">
+            ${confirmText}
+          </button>
+        </div>
+      </div>
+    `;
+
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    if (window.lucide) {
+      window.lucide.createIcons({ root: modalContent });
+    }
+
+    function cleanup(result) {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', keyHandler);
+      setTimeout(() => {
+        modalContent.innerHTML = '';
+        resolve(result);
+      }, 200);
+    }
+
+    function keyHandler(e) {
+      if (e.key === 'Escape') {
+        cleanup(false);
+      } else if (e.key === 'Enter') {
+        cleanup(true);
+      }
+    }
+
+    window.addEventListener('keydown', keyHandler);
+
+    modalContent.querySelector('#dialog-btn-confirm')?.addEventListener('click', () => cleanup(true));
+    modalContent.querySelector('#dialog-btn-cancel')?.addEventListener('click', () => cleanup(false));
+  });
+}
+
+// =========================================================================
+// Modal Manager for Form Popups
+// =========================================================================
 export function setupModals() {
   const overlay = document.getElementById('modal-overlay');
   const modalContent = document.getElementById('modal-content');
@@ -52,7 +145,6 @@ export function setupModals() {
           </div>
 
           <form id="form-add-tx" class="space-y-3.5">
-            <!-- Type Selector -->
             <div class="grid grid-cols-2 gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
               <label class="flex items-center justify-center gap-1.5 py-1.5 rounded-lg cursor-pointer text-xs font-semibold text-rose-300 has-[:checked]:bg-rose-600 has-[:checked]:text-white transition-all">
                 <input type="radio" name="tx-type" value="expense" checked class="hidden" />
@@ -430,7 +522,6 @@ export function setupModals() {
       });
     }
 
-    // Bind close button
     modalContent.querySelector('.modal-close-btn')?.addEventListener('click', closeModal);
   });
 }

@@ -1,8 +1,9 @@
-// 3. Tasks View - Comprehensive Task Management with Kanban & List Views
+// 3. Tasks View - Comprehensive Task Management with Decision Dialogs
 import { state } from '../state.js';
 import { showToast } from '../utils.js';
+import { showConfirmDialog } from '../modals.js';
 
-let taskViewMode = 'list'; // 'list' or 'kanban'
+let taskViewMode = 'list';
 let selectedCategory = 'all';
 
 export function renderTasks(container) {
@@ -15,9 +16,9 @@ export function renderTasks(container) {
   const pendingCount = tasks.filter(t => !t.completed).length;
 
   container.innerHTML = `
-    <div class="space-y-6 animate-fade-in pb-12">
+    <div class="space-y-6 pb-12">
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 stagger-item stagger-1">
         <div>
           <h1 class="text-2xl font-bold text-white flex items-center gap-2">
             <i data-lucide="check-circle" class="w-6 h-6 text-purple-400"></i>
@@ -26,17 +27,16 @@ export function renderTasks(container) {
           <p class="text-xs text-slate-400 mt-1">จัดการรายการงานที่ต้องทำให้เสร็จ ลำดับความสำคัญ และกำหนดส่ง</p>
         </div>
         <div class="flex items-center gap-2.5">
-          <!-- View Toggle -->
           <div class="flex items-center bg-slate-900/80 p-0.5 rounded-xl border border-slate-700 text-xs">
-            <button id="view-list-btn" class="px-3 py-1.5 rounded-lg transition-all ${taskViewMode === 'list' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'} flex items-center gap-1.5">
+            <button id="view-list-btn" class="px-3 py-1.5 rounded-lg transition-all ${taskViewMode === 'list' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'} flex items-center gap-1.5">
               <i data-lucide="list" class="w-3.5 h-3.5"></i> รายการ
             </button>
-            <button id="view-kanban-btn" class="px-3 py-1.5 rounded-lg transition-all ${taskViewMode === 'kanban' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'} flex items-center gap-1.5">
+            <button id="view-kanban-btn" class="px-3 py-1.5 rounded-lg transition-all ${taskViewMode === 'kanban' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'} flex items-center gap-1.5">
               <i data-lucide="columns-3" class="w-3.5 h-3.5"></i> Kanban
             </button>
           </div>
 
-          <button id="btn-add-task" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+          <button id="btn-add-task" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-2">
             <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มงานใหม่
           </button>
         </div>
@@ -44,7 +44,7 @@ export function renderTasks(container) {
 
       <!-- Quick Metrics Bar -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="glass-panel p-4 flex items-center justify-between">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center justify-between stagger-item stagger-1">
           <div>
             <span class="text-xs text-slate-400">งานทั้งหมด</span>
             <div class="text-xl font-bold text-white mt-0.5">${tasks.length} งาน</div>
@@ -54,7 +54,7 @@ export function renderTasks(container) {
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center justify-between">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center justify-between stagger-item stagger-2">
           <div>
             <span class="text-xs text-slate-400">รอดำเนินการ</span>
             <div class="text-xl font-bold text-amber-400 mt-0.5">${pendingCount} งาน</div>
@@ -64,7 +64,7 @@ export function renderTasks(container) {
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center justify-between">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center justify-between stagger-item stagger-3">
           <div>
             <span class="text-xs text-slate-400">เสร็จสิ้นแล้ว</span>
             <div class="text-xl font-bold text-emerald-400 mt-0.5">${completedCount} งาน</div>
@@ -76,16 +76,18 @@ export function renderTasks(container) {
       </div>
 
       <!-- Category Filter Pills -->
-      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs stagger-item stagger-2">
         ${['all', 'เรียน', 'สุขภาพ', 'พัฒนาตัวเอง', 'การเงิน', 'งาน'].map(cat => `
-          <button class="cat-pill-btn px-3 py-1.5 rounded-xl border transition-all ${selectedCategory === cat ? 'bg-purple-600/30 border-purple-500 text-purple-200 font-semibold' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'}" data-cat="${cat}">
+          <button class="cat-pill-btn px-3 py-1.5 rounded-xl border transition-all ${selectedCategory === cat ? 'bg-purple-600/30 border-purple-500 text-purple-200 font-semibold shadow-md shadow-purple-600/20' : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'}" data-cat="${cat}">
             ${cat === 'all' ? 'ทุกหมวดหมู่' : cat}
           </button>
         `).join('')}
       </div>
 
-      <!-- Task Content (List or Kanban) -->
-      ${taskViewMode === 'list' ? renderListView(tasks) : renderKanbanView(tasks)}
+      <!-- Task Content -->
+      <div class="stagger-item stagger-3">
+        ${taskViewMode === 'list' ? renderListView(tasks) : renderKanbanView(tasks)}
+      </div>
     </div>
   `;
 
@@ -110,7 +112,7 @@ function renderListView(tasks) {
           const badgeClass = t.category === 'เรียน' ? 'badge-study' : t.category === 'สุขภาพ' ? 'badge-health' : t.category === 'การเงิน' ? 'badge-finance' : 'badge-work';
           const priorityColor = t.priority === 'high' ? 'text-rose-400 bg-rose-500/10' : t.priority === 'medium' ? 'text-amber-400 bg-amber-500/10' : 'text-slate-400 bg-slate-800';
           return `
-            <div class="p-4 hover:bg-slate-800/30 transition-colors flex items-center justify-between gap-4 group">
+            <div class="p-4 hover:bg-slate-800/30 transition-all duration-200 hover:translate-x-1 flex items-center justify-between gap-4 group">
               <div class="flex items-center gap-3.5 flex-1 min-w-0">
                 <input type="checkbox" class="custom-checkbox task-check" ${t.completed ? 'checked' : ''} data-id="${t.id}" />
                 <div class="min-w-0">
@@ -124,7 +126,7 @@ function renderListView(tasks) {
               </div>
 
               <div class="flex items-center gap-2">
-                <button class="btn-delete-task opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 transition-all p-1.5" data-id="${t.id}">
+                <button class="btn-delete-task text-slate-500 hover:text-rose-400 transition-all p-1.5" data-id="${t.id}" title="ลบงานนี้">
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
               </div>
@@ -143,7 +145,6 @@ function renderKanbanView(tasks) {
 
   return `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- To Do Column -->
       <div class="glass-panel p-4 flex flex-col gap-3">
         <div class="flex items-center justify-between pb-2 border-b border-slate-800">
           <span class="text-sm font-bold text-white flex items-center gap-2">
@@ -156,7 +157,6 @@ function renderKanbanView(tasks) {
         </div>
       </div>
 
-      <!-- In Progress Column -->
       <div class="glass-panel p-4 flex flex-col gap-3">
         <div class="flex items-center justify-between pb-2 border-b border-slate-800">
           <span class="text-sm font-bold text-cyan-400 flex items-center gap-2">
@@ -169,7 +169,6 @@ function renderKanbanView(tasks) {
         </div>
       </div>
 
-      <!-- Done Column -->
       <div class="glass-panel p-4 flex flex-col gap-3">
         <div class="flex items-center justify-between pb-2 border-b border-slate-800">
           <span class="text-sm font-bold text-emerald-400 flex items-center gap-2">
@@ -188,7 +187,7 @@ function renderKanbanView(tasks) {
 function renderKanbanCard(t) {
   const badgeClass = t.category === 'เรียน' ? 'badge-study' : t.category === 'สุขภาพ' ? 'badge-health' : t.category === 'การเงิน' ? 'badge-finance' : 'badge-work';
   return `
-    <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-purple-500/40 transition-all space-y-2">
+    <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-purple-500/40 transition-all duration-200 hover:-translate-y-1 space-y-2">
       <div class="flex items-start justify-between gap-2">
         <span class="text-xs font-semibold ${t.completed ? 'line-through text-slate-500' : 'text-white'}">${t.title}</span>
         <button class="btn-delete-task text-slate-500 hover:text-rose-400 transition-colors" data-id="${t.id}">
@@ -240,10 +239,22 @@ function bindTaskEvents(container) {
     });
   });
 
+  // Decision Dialog for Deleting Task
   container.querySelectorAll('.btn-delete-task').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      state.deleteTask(id);
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการลบงาน',
+        message: 'คุณแน่ใจว่าต้องการลบงานนี้ใช่หรือไม่? ข้อมูลงานจะถูกนำออกจากรายการทันที',
+        confirmText: 'ลบงานนี้',
+        cancelText: 'ยกเลิก',
+        type: 'danger',
+        icon: 'trash-2'
+      });
+
+      if (confirmed) {
+        state.deleteTask(id);
+      }
     });
   });
 }

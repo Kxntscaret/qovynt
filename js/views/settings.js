@@ -1,8 +1,9 @@
-// Settings View - Database Connection, Profile, GitHub Pages guide, Backup
+// Settings View - Database Connection, Profile, GitHub Pages guide, Backup with Decision Dialogs
 import { state } from '../state.js';
 import { db } from '../db.js';
 import { auth } from '../auth.js';
 import { showToast } from '../utils.js';
+import { showConfirmDialog } from '../modals.js';
 
 export function renderSettings(container) {
   const profile = state.data.profile || {};
@@ -11,9 +12,9 @@ export function renderSettings(container) {
   const isCloud = db.isCloudActive;
 
   container.innerHTML = `
-    <div class="space-y-6 animate-fade-in pb-12 max-w-4xl mx-auto">
+    <div class="space-y-6 pb-12 max-w-4xl mx-auto">
       <!-- Header -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800 stagger-item stagger-1">
         <div>
           <h1 class="text-2xl font-bold text-white flex items-center gap-2">
             <i data-lucide="settings" class="w-6 h-6 text-purple-400"></i>
@@ -24,7 +25,7 @@ export function renderSettings(container) {
       </div>
 
       <!-- Cloud Database (Supabase) Card -->
-      <div class="glass-panel p-6 space-y-4">
+      <div class="glass-panel p-6 space-y-4 stagger-item stagger-2">
         <div class="flex items-start justify-between">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -82,7 +83,7 @@ export function renderSettings(container) {
       </div>
 
       <!-- User Profile Settings -->
-      <div class="glass-panel p-6 space-y-4">
+      <div class="glass-panel p-6 space-y-4 stagger-item stagger-3">
         <h2 class="text-base font-bold text-white flex items-center gap-2">
           <i data-lucide="user" class="w-5 h-5 text-purple-400"></i>
           ข้อมูลส่วนตัว (Profile)
@@ -113,27 +114,27 @@ export function renderSettings(container) {
       </div>
 
       <!-- Backup & Restore -->
-      <div class="glass-panel p-6 space-y-4">
+      <div class="glass-panel p-6 space-y-4 stagger-item stagger-4">
         <h2 class="text-base font-bold text-white flex items-center gap-2">
           <i data-lucide="hard-drive" class="w-5 h-5 text-purple-400"></i>
           การจัดการข้อมูลและการสำรองข้อมูล (Backup & Restore)
         </h2>
         <div class="flex flex-wrap items-center gap-3">
-          <button id="btn-export-json" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-2">
+          <button id="btn-export-json" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-2 transition-all hover:scale-105">
             <i data-lucide="download" class="w-4 h-4"></i> สำรองข้อมูลทั้งหมด (Export JSON)
           </button>
-          <label class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-2 cursor-pointer">
+          <label class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center gap-2 cursor-pointer transition-all hover:scale-105">
             <i data-lucide="upload" class="w-4 h-4"></i> กู้คืนข้อมูล (Import JSON)
             <input type="file" id="input-import-json" accept=".json" class="hidden" />
           </label>
-          <button id="btn-reset-demo" class="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs border border-rose-500/30 flex items-center gap-2 ml-auto">
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเซ็ตเป็นข้อมูลตัวอย่างเริ่มต้น
+          <button id="btn-reset-demo" class="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs border border-rose-500/30 flex items-center gap-2 ml-auto transition-all hover:scale-105">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> รีเซ็ตข้อมูลเริ่มต้น
           </button>
         </div>
       </div>
 
       <!-- GitHub Pages Deployment Guide Card -->
-      <div class="glass-panel p-6 space-y-3 border-purple-500/30">
+      <div class="glass-panel p-6 space-y-3 border-purple-500/30 stagger-item stagger-5">
         <h2 class="text-base font-bold text-white flex items-center gap-2">
           <i data-lucide="github" class="w-5 h-5 text-purple-400"></i>
           วิธีนำขึ้น GitHub Pages ให้ทุกคนเข้าใช้งานได้ฟรี
@@ -157,7 +158,6 @@ export function renderSettings(container) {
 }
 
 function bindSettingsEvents(container) {
-  // Save Supabase
   container.querySelector('#btn-save-supabase')?.addEventListener('click', () => {
     const url = container.querySelector('#setting-supabase-url').value.trim();
     const key = container.querySelector('#setting-supabase-key').value.trim();
@@ -168,7 +168,6 @@ function bindSettingsEvents(container) {
     setTimeout(() => window.location.reload(), 1000);
   });
 
-  // Clear Supabase
   container.querySelector('#btn-clear-supabase')?.addEventListener('click', () => {
     localStorage.removeItem('qovynt_supabase_url');
     localStorage.removeItem('qovynt_supabase_key');
@@ -177,7 +176,6 @@ function bindSettingsEvents(container) {
     setTimeout(() => window.location.reload(), 800);
   });
 
-  // Save profile
   container.querySelector('#btn-save-profile')?.addEventListener('click', async () => {
     const name = container.querySelector('#setting-name').value.trim();
     const target = Number(container.querySelector('#setting-savings-target').value);
@@ -190,7 +188,6 @@ function bindSettingsEvents(container) {
     state.notify();
   });
 
-  // Export JSON
   container.querySelector('#btn-export-json')?.addEventListener('click', () => {
     const json = db.exportJSON();
     const blob = new Blob([json], { type: 'application/json' });
@@ -202,7 +199,6 @@ function bindSettingsEvents(container) {
     showToast('ส่งออกไฟล์สำรองข้อมูล JSON สำเร็จ!', 'success');
   });
 
-  // Import JSON
   container.querySelector('#input-import-json')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -219,9 +215,18 @@ function bindSettingsEvents(container) {
     reader.readAsText(file);
   });
 
-  // Reset Demo
-  container.querySelector('#btn-reset-demo')?.addEventListener('click', () => {
-    if (confirm('คุณแน่ใจว่าต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นตัวอย่างใช่หรือไม่?')) {
+  // Decision Dialog for Reset
+  container.querySelector('#btn-reset-demo')?.addEventListener('click', async () => {
+    const confirmed = await showConfirmDialog({
+      title: 'ยืนยันการรีเซ็ตข้อมูล',
+      message: 'คุณแน่ใจว่าต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นใช่หรือไม่? ข้อมูลทั้งหมดที่บันทึกไว้จะถูกล้างและไม่สามารถย้อนกลับได้',
+      confirmText: 'ยืนยันรีเซ็ตข้อมูลทั้งหมด',
+      cancelText: 'ยกเลิก',
+      type: 'danger',
+      icon: 'alert-triangle'
+    });
+
+    if (confirmed) {
       db.resetAll();
       showToast('รีเซ็ตข้อมูลเรียบร้อย กำลังรีโหลด...', 'info');
       setTimeout(() => window.location.reload(), 800);

@@ -1,8 +1,8 @@
-// QOVYNT Main Application Controller
+// QOVYNT Main Application Controller with Real Auth & Modern Decision Dialogs
 import { state } from './state.js';
 import { auth } from './auth.js';
 import { db } from './db.js';
-import { setupModals } from './modals.js';
+import { setupModals, showConfirmDialog } from './modals.js';
 import { formatThaiDateFull, getDynamicGreeting, showToast, playAudioFeedback } from './utils.js';
 
 // Import Views
@@ -30,7 +30,7 @@ class Application {
     this.setupHeader();
     this.setupCommandPalette();
     this.setupMobileMenu();
-    this.setupCursorGlow(); // 7. Glowing cursor spotlight
+    this.setupCursorGlow();
 
     // Listen to reactive state changes
     state.subscribe(() => {
@@ -41,14 +41,22 @@ class Application {
     // Listen to Auth changes
     auth.subscribe((user) => {
       this.updateUserProfile(user);
+      if (!user) {
+        state.setView('auth');
+      }
     });
 
     // Initialize state
     await state.init();
+
+    // Enforce authentication: If not logged in, navigate straight to login screen!
+    if (!auth.isAuthenticated()) {
+      state.setView('auth');
+    }
+
     console.log('QOVYNT Application initialized successfully.');
   }
 
-  // 7. Interactive Cursor Glow Spotlight with Smooth Interpolation
   setupCursorGlow() {
     const glowEl = document.getElementById('cursor-glow');
     if (!glowEl) return;
@@ -73,12 +81,9 @@ class Application {
       isMoving = false;
     });
 
-    // 60FPS Lerp loop
     function renderGlow() {
-      // Smooth linear interpolation (lerp 0.15)
       currentX += (targetX - currentX) * 0.18;
       currentY += (targetY - currentY) * 0.18;
-
       glowEl.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
       requestAnimationFrame(renderGlow);
     }
@@ -88,14 +93,21 @@ class Application {
 
   renderCurrentView() {
     if (!this.viewContainer) return;
+
+    // Route guard: If user is not authenticated, only allow 'auth' view!
+    if (!auth.isAuthenticated() && state.currentView !== 'auth') {
+      state.setView('auth');
+      return;
+    }
+
     const view = state.currentView;
 
-    // Reset and trigger entrance animation (2. เปิดเว็บไซต์ Dashboard ค่อย ๆ Fade in)
+    // Trigger smooth fade-in entrance
     this.viewContainer.classList.remove('animate-fade-in');
-    void this.viewContainer.offsetWidth; // Trigger reflow
+    void this.viewContainer.offsetWidth;
     this.viewContainer.classList.add('animate-fade-in');
 
-    // 3. Highlight active sidebar item with smooth transition
+    // Highlight active sidebar item
     document.querySelectorAll('.nav-item').forEach(el => {
       const target = el.getAttribute('data-view');
       if (target === view) {
@@ -104,6 +116,15 @@ class Application {
         el.classList.remove('active');
       }
     });
+
+    // Toggle sidebar visibility on mobile or auth screen
+    const sidebar = document.getElementById('sidebar');
+    const header = document.querySelector('header');
+    if (view === 'auth') {
+      if (sidebar) sidebar.classList.add('lg:hidden');
+    } else {
+      if (sidebar) sidebar.classList.remove('lg:hidden');
+    }
 
     // Route rendering
     switch (view) {
@@ -150,7 +171,6 @@ class Application {
         const targetView = item.getAttribute('data-view');
         state.setView(targetView);
 
-        // Close mobile sidebar if open
         const sidebar = document.getElementById('sidebar');
         if (sidebar && window.innerWidth < 1024) {
           sidebar.classList.add('-translate-x-full');
@@ -158,10 +178,19 @@ class Application {
       });
     });
 
-    // Logout button
+    // Beautiful Glassmorphic Decision Dialog for Logout
     document.getElementById('nav-logout')?.addEventListener('click', async (e) => {
       e.preventDefault();
-      if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการออกจากระบบ',
+        message: 'คุณต้องการออกจากระบบ QOVYNT ใช่หรือไม่? เซสชันปัจจุบันของคุณจะสิ้นสุดลง',
+        confirmText: 'ออกจากระบบทันที',
+        cancelText: 'อยู่ต่อในระบบ',
+        type: 'warning',
+        icon: 'log-out'
+      });
+
+      if (confirmed) {
         await auth.signOut();
         state.setView('auth');
       }
@@ -170,17 +199,14 @@ class Application {
 
   setupHeader() {
     this.updateHeader();
-    // Theme toggle button
     document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
       showToast('กำลังใช้งานธีม Cyber Dark Violet (ค่าเริ่มต้นที่ดีที่สุด)', 'info');
     });
 
-    // Notification bell
     document.getElementById('btn-notifications')?.addEventListener('click', () => {
       showToast('ไม่มีการแจ้งเตือนใหม่ในขณะนี้', 'info');
     });
 
-    // User profile pill click
     document.getElementById('header-user-btn')?.addEventListener('click', () => {
       if (!auth.isAuthenticated()) {
         state.setView('auth');
@@ -191,7 +217,7 @@ class Application {
   }
 
   updateHeader() {
-    const greetingInfo = getDynamicGreeting(state.data.profile?.name || 'คุณ');
+    const greetingInfo = getDynamicGreeting(auth.getUser()?.name || state.data.profile?.name || 'คุณ');
     const greetingEl = document.getElementById('header-greeting');
     const subtitleEl = document.getElementById('header-subtitle');
     const dateEl = document.getElementById('header-date');
@@ -205,17 +231,20 @@ class Application {
     const avatarEl = document.getElementById('header-user-avatar');
     const nameEl = document.getElementById('header-user-name');
     const userRoleEl = document.getElementById('header-user-role');
+    const logoutBtn = document.getElementById('nav-logout');
 
     if (user) {
       if (avatarEl) {
         avatarEl.src = user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150';
       }
       if (nameEl) nameEl.textContent = user.name || 'คุณ';
-      if (userRoleEl) userRoleEl.textContent = user.provider === 'google' ? 'Google User' : 'Pro Member';
+      if (userRoleEl) userRoleEl.textContent = user.provider === 'google' ? 'Google Account' : 'Verified Member';
+      if (logoutBtn) logoutBtn.classList.remove('hidden');
     } else {
       if (avatarEl) avatarEl.src = 'https://api.dicebear.com/7.x/identicon/svg?seed=guest';
       if (nameEl) nameEl.textContent = 'เข้าสู่ระบบ';
-      if (userRoleEl) userRoleEl.textContent = 'Guest';
+      if (userRoleEl) userRoleEl.textContent = 'ยังไม่ได้ล็อกอิน';
+      if (logoutBtn) logoutBtn.classList.add('hidden');
     }
   }
 

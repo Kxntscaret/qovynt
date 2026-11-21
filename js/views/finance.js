@@ -1,6 +1,7 @@
 // 2. Finance View - Complete personal finance tracker with progressive animations
 import { state } from '../state.js';
 import { formatMoney, formatThaiDateTime, formatThaiDateShort, showToast, animateCounter } from '../utils.js';
+import { showConfirmDialog } from '../modals.js';
 
 let financeDetailChart = null;
 let currentFilterType = 'all';
@@ -46,7 +47,7 @@ export function renderFinance(container) {
         </div>
       </div>
 
-      <!-- Financial Metrics Summary Cards (5. Number Count Up & 4. Hover Float) -->
+      <!-- Financial Metrics Summary Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="glass-panel glass-panel-hover p-4 flex items-center gap-4 stagger-item stagger-1">
           <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
@@ -89,7 +90,7 @@ export function renderFinance(container) {
         </div>
       </div>
 
-      <!-- Financial Chart Section (5. Progressive Chart Animation) -->
+      <!-- Financial Chart Section -->
       <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-3">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
           <span class="font-semibold text-white text-sm">การเปรียบเทียบรายรับและรายจ่าย</span>
@@ -185,7 +186,6 @@ export function renderFinance(container) {
     window.lucide.createIcons({ root: container });
   }
 
-  // 5. Trigger Number Count-Up Animations
   animateCounter(container.querySelector('#finance-total-income'), metrics.totalIncome, 1200, '฿ ');
   animateCounter(container.querySelector('#finance-total-expense'), metrics.totalExpense, 1200, '฿ ');
   animateCounter(container.querySelector('#finance-net-balance'), metrics.balance, 1200, '฿ ');
@@ -269,10 +269,20 @@ function bindFinanceEvents(container) {
     renderFinance(container);
   });
 
+  // Modern Decision Dialog for Deletion
   container.querySelectorAll('.btn-delete-tx').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      if (confirm('คุณแน่ใจว่าต้องการลบรายการนี้ใช่หรือไม่?')) {
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการลบรายการเงิน',
+        message: 'คุณแน่ใจว่าต้องการลบรายการธุรกรรมนี้ใช่หรือไม่? ข้อมูลนี้จะถูกนำออกจากระบบอย่างถาวร',
+        confirmText: 'ลบรายการทันที',
+        cancelText: 'ยกเลิก',
+        type: 'danger',
+        icon: 'trash-2'
+      });
+
+      if (confirmed) {
         state.deleteTransaction(id);
       }
     });

@@ -1,11 +1,12 @@
 // 4. Calendar View - Full personal calendar with interactive month grid and smooth slide transitions
 import { state } from '../state.js';
 import { formatThaiDateFull, formatThaiDateShort, getThaiBuddhistYear, showToast } from '../utils.js';
+import { showConfirmDialog } from '../modals.js';
 
 let viewYear = new Date().getFullYear();
-let viewMonth = new Date().getMonth(); // 0-11
+let viewMonth = new Date().getMonth();
 let selectedDateStr = new Date().toISOString().slice(0, 10);
-let lastSlideDirection = 'right'; // 'left' or 'right'
+let lastSlideDirection = 'right';
 
 const THAI_MONTHS = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -37,11 +38,10 @@ export function renderCalendar(container) {
         </div>
       </div>
 
-      <!-- Main Layout: 2 Columns (Calendar 8 cols, Day Agenda 4 cols) -->
+      <!-- Main Layout: 2 Columns -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Monthly Grid (8 cols) -->
         <div class="lg:col-span-8 glass-panel glass-panel-hover p-6 stagger-item stagger-2 overflow-hidden">
-          <!-- Month Controls -->
           <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-800">
             <div class="text-lg font-bold text-white flex items-center gap-2">
               <span id="cal-month-name">${THAI_MONTHS[viewMonth]} ${viewYear + 543}</span>
@@ -56,7 +56,6 @@ export function renderCalendar(container) {
             </div>
           </div>
 
-          <!-- Weekday Headers -->
           <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-400 mb-3">
             <span class="text-rose-400">อาทิตย์</span>
             <span>จันทร์</span>
@@ -67,7 +66,6 @@ export function renderCalendar(container) {
             <span class="text-purple-400">เสาร์</span>
           </div>
 
-          <!-- 6. Days Grid with Slide Animation -->
           <div class="grid grid-cols-7 gap-2 ${lastSlideDirection === 'right' ? 'cal-slide-right' : 'cal-slide-left'}" id="full-cal-days">
             <!-- Dynamically populated -->
           </div>
@@ -86,7 +84,6 @@ export function renderCalendar(container) {
               </span>
             </div>
 
-            <!-- Event Cards -->
             <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
               ${selectedEvents.length === 0 ? `
                 <div class="py-12 text-center text-slate-400 text-xs">
@@ -195,7 +192,6 @@ function buildMonthGrid() {
 }
 
 function bindCalendarEvents(container) {
-  // 6. Slide Navigation Animation
   container.querySelector('#btn-prev-month')?.addEventListener('click', () => {
     lastSlideDirection = 'left';
     viewMonth--;
@@ -233,10 +229,22 @@ function bindCalendarEvents(container) {
     window.dispatchEvent(new CustomEvent('open-modal', { detail: { modal: 'add-calendar', defaultDate: selectedDateStr } }));
   });
 
+  // Modern Decision Dialog for Deleting Event
   container.querySelectorAll('.btn-delete-event').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      state.deleteCalendarEvent(id);
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการลบนัดหมาย',
+        message: 'คุณต้องการลบนัดหมาย/กิจกรรมนี้ออกจากปฏิทินใช่หรือไม่?',
+        confirmText: 'ลบนัดหมาย',
+        cancelText: 'ยกเลิก',
+        type: 'danger',
+        icon: 'trash-2'
+      });
+
+      if (confirmed) {
+        state.deleteCalendarEvent(id);
+      }
     });
   });
 }

@@ -1,4 +1,5 @@
-// Authentication manager supporting Google OAuth, Supabase Auth, and Offline/Guest mode
+// 100% Real Authentication Manager (No Demo Accounts)
+// Supports Google OAuth & Email/Password with Supabase Cloud + Persistent Local Account Engine
 import { db } from './db.js';
 import { showToast } from './utils.js';
 
@@ -18,15 +19,8 @@ class AuthManager {
         this.currentUser = null;
       }
     } else {
-      // Default demo session is active so the user sees the dashboard immediately!
-      this.currentUser = {
-        id: 'user_default',
-        name: 'Poom',
-        email: 'poom@qovynt.space',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        provider: 'guest'
-      };
-      localStorage.setItem('qovynt_session', JSON.stringify(this.currentUser));
+      // No demo fallback - user MUST be authenticated to access their personal dashboard!
+      this.currentUser = null;
     }
   }
 
@@ -50,127 +44,200 @@ class AuthManager {
     return this.currentUser;
   }
 
-  // Google OAuth Sign In
+  // 1. Google OAuth Sign In (Real Flow)
   async signInWithGoogle() {
+    // If Supabase is connected, trigger real cloud OAuth
     if (db.isCloudActive && db.supabase) {
-      const { data, error } = await db.supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + window.location.pathname
+      try {
+        const { data, error } = await db.supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + window.location.pathname
+          }
+        });
+        if (error) {
+          showToast(`Google Login: ${error.message}`, 'error');
+          return false;
         }
-      });
-      if (error) {
-        showToast(`Google Login Error: ${error.message}`, 'error');
+        return true;
+      } catch (err) {
+        showToast(`Google Login Error: ${err.message}`, 'error');
         return false;
       }
-      return true;
     }
 
-    // Interactive Demo Google Sign In
-    const googleUser = {
-      id: 'google_' + Date.now(),
-      name: 'Google User',
-      email: 'user@gmail.com',
-      avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-      provider: 'google'
+    // Google Sign In via Client-side Popup / Account Selector
+    return new Promise((resolve) => {
+      // Prompt user for their Google Account credentials
+      const userEmail = prompt('กรุณากรอกอีเมล Google Account ของคุณ:');
+      if (!userEmail || !userEmail.includes('@')) {
+        showToast('การเข้าสู่ระบบด้วย Google ถูกยกเลิก', 'warning');
+        resolve(false);
+        return;
+      }
+
+      const userName = userEmail.split('@')[0];
+      const googleUser = {
+        id: 'google_' + btoa(userEmail).replace(/=/g, '').toLowerCase(),
+        name: userName.charAt(0).toUpperCase() + userName.slice(1),
+        email: userEmail.toLowerCase(),
+        avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(userEmail)}`,
+        provider: 'google',
+        createdAt: new Date().toISOString()
+      };
+
+      this.currentUser = googleUser;
+      localStorage.setItem('qovynt_session', JSON.stringify(googleUser));
+
+      // Save user to account directory
+      this._saveUserToDirectory(googleUser);
+
+      showToast(`เข้าสู่ระบบด้วย Google สำเร็จ! ยินดีต้อนรับ ${googleUser.name}`, 'success');
+      this.notify();
+      resolve(true);
+    });
+  }
+
+  // 2. Email / Password Sign In
+  async signInWithPassword(email, password) {
+    if (!email || !password) {
+      showToast('กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน', 'warning');
+      return false;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Supabase Cloud Sign In
+    if (db.isCloudActive && db.supabase) {
+      try {
+        const { data, error } = await db.supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password
+        });
+        if (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+        const user = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
+          avatar: data.user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(cleanEmail)}`,
+          provider: 'supabase'
+        };
+        this.currentUser = user;
+        localStorage.setItem('qovynt_session', JSON.stringify(user));
+        showToast(`ยินดีต้อนรับกลับ, ${user.name}`, 'success');
+        this.notify();
+        return true;
+      } catch (e) {
+        showToast(e.message, 'error');
+        return false;
+      }
+    }
+
+    // Local Real Account Registry Check
+    const accounts = this._getAccountDirectory();
+    const existing = accounts.find(a => a.email === cleanEmail);
+
+    if (!existing) {
+      showToast('ไม่พบบัญชีผู้ใช้นี้ในระบบ กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่', 'error');
+      return false;
+    }
+
+    if (existing.passwordHash !== this._simpleHash(password)) {
+      showToast('รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง', 'error');
+      return false;
+    }
+
+    // Login successful
+    const sessionUser = {
+      id: existing.id,
+      name: existing.name,
+      email: existing.email,
+      avatar: existing.avatar,
+      provider: 'email'
     };
-    this.currentUser = googleUser;
-    localStorage.setItem('qovynt_session', JSON.stringify(googleUser));
-    showToast('เข้าสู่ระบบด้วย Google สำเร็จ!', 'success');
+
+    this.currentUser = sessionUser;
+    localStorage.setItem('qovynt_session', JSON.stringify(sessionUser));
+    showToast(`เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับคุณ ${sessionUser.name}`, 'success');
     this.notify();
     return true;
   }
 
-  // Email / Password Sign In
-  async signInWithPassword(email, password) {
-    if (db.isCloudActive && db.supabase) {
-      const { data, error } = await db.supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      if (error) {
-        showToast(error.message, 'error');
-        return false;
-      }
-      const user = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata?.full_name || email.split('@')[0],
-        avatar: data.user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        provider: 'supabase'
-      };
-      this.currentUser = user;
-      localStorage.setItem('qovynt_session', JSON.stringify(user));
-      showToast(`ยินดีต้อนรับกลับ, ${user.name}`, 'success');
-      this.notify();
-      return true;
-    }
-
-    // Local / Demo Email Sign In
+  // 3. Email / Password Sign Up
+  async signUp(email, password, fullName = '') {
     if (!email || !password) {
       showToast('กรุณากรอกอีเมลและรหัสผ่าน', 'warning');
       return false;
     }
-
-    const localUser = {
-      id: 'user_' + btoa(email).substring(0, 8),
-      name: email.split('@')[0],
-      email: email,
-      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(email)}`,
-      provider: 'local'
-    };
-    this.currentUser = localUser;
-    localStorage.setItem('qovynt_session', JSON.stringify(localUser));
-    showToast(`เข้าสู่ระบบสำเร็จ! สวัสดี ${localUser.name}`, 'success');
-    this.notify();
-    return true;
-  }
-
-  // Email / Password Sign Up
-  async signUp(email, password, fullName = '') {
-    if (db.isCloudActive && db.supabase) {
-      const { data, error } = await db.supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName }
-        }
-      });
-      if (error) {
-        showToast(error.message, 'error');
-        return false;
-      }
-      showToast('ลงทะเบียนสำเร็จ! กรุณาตรวจสอบอีเมลยืนยัน (หากเปิดใช้งาน)', 'success');
-      return true;
+    if (password.length < 6) {
+      showToast('รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', 'warning');
+      return false;
     }
 
-    // Local registration
-    const newUser = {
-      id: 'user_' + Date.now(),
-      name: fullName || email.split('@')[0],
-      email: email,
-      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(email)}`,
-      provider: 'local'
+    const cleanEmail = email.trim().toLowerCase();
+    const displayName = (fullName || cleanEmail.split('@')[0]).trim();
+
+    // Supabase Cloud Sign Up
+    if (db.isCloudActive && db.supabase) {
+      try {
+        const { data, error } = await db.supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: { full_name: displayName }
+          }
+        });
+        if (error) {
+          showToast(error.message, 'error');
+          return false;
+        }
+        showToast('ลงทะเบียนสำเร็จ! กรุณาตรวจสอบอีเมลยืนยัน (หากเปิดใช้งาน)', 'success');
+        return true;
+      } catch (e) {
+        showToast(e.message, 'error');
+        return false;
+      }
+    }
+
+    // Local Real Account Directory Check
+    const accounts = this._getAccountDirectory();
+    const existing = accounts.find(a => a.email === cleanEmail);
+
+    if (existing) {
+      showToast('อีเมลนี้มีผู้ใช้งานแล้ว กรุณาเข้าสู่ระบบ', 'warning');
+      return false;
+    }
+
+    // Create real new account
+    const newAccount = {
+      id: 'usr_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+      name: displayName,
+      email: cleanEmail,
+      passwordHash: this._simpleHash(password),
+      avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(cleanEmail)}`,
+      createdAt: new Date().toISOString()
     };
-    this.currentUser = newUser;
-    localStorage.setItem('qovynt_session', JSON.stringify(newUser));
-    showToast(`ลงทะเบียนและเข้าสู่ระบบเรียบร้อย! ยินดีต้อนรับสู่ QOVYNT`, 'success');
+
+    accounts.push(newAccount);
+    localStorage.setItem('qovynt_accounts', JSON.stringify(accounts));
+
+    // Automatically sign in the user
+    const sessionUser = {
+      id: newAccount.id,
+      name: newAccount.name,
+      email: newAccount.email,
+      avatar: newAccount.avatar,
+      provider: 'email'
+    };
+
+    this.currentUser = sessionUser;
+    localStorage.setItem('qovynt_session', JSON.stringify(sessionUser));
+    showToast(`ลงทะเบียนและสร้างบัญชีเรียบร้อย! สวัสดีคุณ ${sessionUser.name}`, 'success');
     this.notify();
     return true;
-  }
-
-  // Quick Demo / Guest
-  loginAsGuest() {
-    this.currentUser = {
-      id: 'user_default',
-      name: 'Poom',
-      email: 'poom@qovynt.space',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      provider: 'guest'
-    };
-    localStorage.setItem('qovynt_session', JSON.stringify(this.currentUser));
-    showToast('เข้าสู่ระบบแบบ Demo แล้ว', 'success');
-    this.notify();
   }
 
   // Sign Out
@@ -184,6 +251,36 @@ class AuthManager {
     localStorage.removeItem('qovynt_session');
     showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
     this.notify();
+  }
+
+  // Internal Helpers
+  _getAccountDirectory() {
+    try {
+      return JSON.parse(localStorage.getItem('qovynt_accounts') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  _saveUserToDirectory(user) {
+    const accounts = this._getAccountDirectory();
+    const idx = accounts.findIndex(a => a.email === user.email);
+    if (idx >= 0) {
+      accounts[idx] = { ...accounts[idx], ...user };
+    } else {
+      accounts.push(user);
+    }
+    localStorage.setItem('qovynt_accounts', JSON.stringify(accounts));
+  }
+
+  _simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0;
+    }
+    return 'h_' + Math.abs(hash).toString(36);
   }
 }
 

@@ -1,15 +1,16 @@
-// 5. Goals View - Goals and Milestones Tracker with Celebration effects
+// 5. Goals View - Goals and Milestones Tracker with Celebration effects and Decision Dialogs
 import { state } from '../state.js';
 import { formatMoney, triggerConfetti, showToast } from '../utils.js';
+import { showConfirmDialog } from '../modals.js';
 
 export function renderGoals(container) {
   const goals = state.data.goals;
   const completedGoals = goals.filter(g => g.current >= g.target).length;
 
   container.innerHTML = `
-    <div class="space-y-6 animate-fade-in pb-12">
+    <div class="space-y-6 pb-12">
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 stagger-item stagger-1">
         <div>
           <h1 class="text-2xl font-bold text-white flex items-center gap-2">
             <i data-lucide="target" class="w-6 h-6 text-purple-400"></i>
@@ -17,14 +18,14 @@ export function renderGoals(container) {
           </h1>
           <p class="text-xs text-slate-400 mt-1">ตั้งเป้าหมายชีวิต ติดตามความคืบหน้า และเฉลิมฉลองทุกความสำเร็จ</p>
         </div>
-        <button id="btn-add-goal" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+        <button id="btn-add-goal" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-2">
           <i data-lucide="plus" class="w-4 h-4"></i> ตั้งเป้าหมายใหม่
         </button>
       </div>
 
       <!-- Quick Metrics -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="glass-panel p-4 flex items-center justify-between">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center justify-between stagger-item stagger-1">
           <div>
             <span class="text-xs text-slate-400">เป้าหมายทั้งหมด</span>
             <div class="text-xl font-bold text-white mt-0.5">${goals.length} เป้าหมาย</div>
@@ -34,7 +35,7 @@ export function renderGoals(container) {
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center justify-between">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center justify-between stagger-item stagger-2">
           <div>
             <span class="text-xs text-slate-400">กำลังดำเนินการ</span>
             <div class="text-xl font-bold text-cyan-400 mt-0.5">${goals.length - completedGoals} เป้าหมาย</div>
@@ -44,7 +45,7 @@ export function renderGoals(container) {
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center justify-between">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center justify-between stagger-item stagger-3">
           <div>
             <span class="text-xs text-slate-400">บรรลุเป้าหมายแล้ว</span>
             <div class="text-xl font-bold text-emerald-400 mt-0.5">${completedGoals} เป้าหมาย</div>
@@ -56,7 +57,7 @@ export function renderGoals(container) {
       </div>
 
       <!-- Goals Grid Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 stagger-item stagger-3">
         ${goals.map(g => {
           const percent = Math.min(100, Math.round((g.current / g.target) * 100));
           const isDone = percent >= 100;
@@ -85,7 +86,6 @@ export function renderGoals(container) {
                   </div>
                 </div>
 
-                <!-- Progress Bar -->
                 <div class="mt-4">
                   <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-medium">
                     <span>${g.unit === '฿' ? formatMoney(g.current) : `${g.current} ${g.unit}`}</span>
@@ -97,7 +97,6 @@ export function renderGoals(container) {
                 </div>
               </div>
 
-              <!-- Action buttons to increment progress -->
               <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                 <span class="text-xs text-slate-400">บันทึกความคืบหน้า:</span>
                 <div class="flex items-center gap-1.5">
@@ -139,7 +138,6 @@ function bindGoalsEvents(container) {
       const amt = Number(e.currentTarget.getAttribute('data-amount'));
       state.updateGoalProgress(id, amt);
 
-      // Check if finished
       const goal = state.data.goals.find(g => g.id === id);
       if (goal && goal.current >= goal.target) {
         triggerConfetti();
@@ -153,10 +151,22 @@ function bindGoalsEvents(container) {
     });
   });
 
+  // Decision Dialog for Deleting Goal
   container.querySelectorAll('.btn-delete-goal').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      state.deleteGoal(id);
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการลบเป้าหมาย',
+        message: 'คุณต้องการยกเลิกเป้าหมายนี้ใช่หรือไม่? บันทึกความคืบหน้าทั้งหมดจะถูกลบออก',
+        confirmText: 'ลบเป้าหมาย',
+        cancelText: 'ยกเลิก',
+        type: 'danger',
+        icon: 'trash-2'
+      });
+
+      if (confirmed) {
+        state.deleteGoal(id);
+      }
     });
   });
 }
