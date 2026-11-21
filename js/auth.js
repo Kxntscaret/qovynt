@@ -8,6 +8,44 @@ class AuthManager {
     this.currentUser = null;
     this.listeners = [];
     this.loadSession();
+    this.initAuthListener();
+  }
+
+  initAuthListener() {
+    if (db.isCloudActive && db.supabase) {
+      // 1. Check existing session on load (handles redirect from Google OAuth)
+      db.supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && session.user) {
+          this._syncSupabaseUser(session.user);
+        }
+      }).catch(err => console.warn('Supabase getSession error:', err));
+
+      // 2. Real-time auth listener for OAuth callback
+      db.supabase.auth.onAuthStateChange(async (event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && session.user) {
+          this._syncSupabaseUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          this.currentUser = null;
+          localStorage.removeItem('qovynt_session');
+          this.notify();
+        }
+      });
+    }
+  }
+
+  _syncSupabaseUser(u) {
+    const userObj = {
+      id: u.id,
+      name: u.user_metadata?.full_name || u.user_metadata?.name || u.email.split('@')[0],
+      email: u.email,
+      avatar: u.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(u.email)}`,
+      provider: u.app_metadata?.provider || 'google',
+      createdAt: u.created_at || new Date().toISOString()
+    };
+    this.currentUser = userObj;
+    localStorage.setItem('qovynt_session', JSON.stringify(userObj));
+    this._saveUserToDirectory(userObj);
+    this.notify();
   }
 
   loadSession() {
