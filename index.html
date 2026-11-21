@@ -54,8 +54,14 @@
   <!-- Mobile Sidebar Backdrop -->
   <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden"></div>
 
-  <!-- Left Sidebar Navigation -->
-  <aside id="sidebar" class="fixed lg:static top-0 bottom-0 left-0 w-64 bg-[#0e1022]/90 backdrop-blur-2xl border-r border-purple-500/10 flex flex-col justify-between p-4 z-50 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 overflow-y-auto">
+  <!-- Left Sidebar Navigation with Ambient Blurred Background -->
+  <aside id="sidebar" class="fixed lg:static top-0 bottom-0 left-0 w-64 border-r border-purple-500/15 flex flex-col justify-between p-4 z-50 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 overflow-y-auto relative isolate overflow-hidden">
+    <!-- Atmospheric Blurred Menu Background from user file (backgournd menu.jfif) -->
+    <div class="sidebar-bg-layer absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+      <img src="assets/menu-bg.jfif" alt="Menu Ambient Background" class="w-full h-full object-cover scale-125 filter blur-lg brightness-45 contrast-125 opacity-35" />
+      <div class="absolute inset-0 bg-[#0e1022]/85 backdrop-blur-xl"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-purple-950/25 via-transparent to-slate-950/90"></div>
+    </div>
     <!-- Brand / Logo -->
     <div>
       <div class="flex items-center gap-3 px-2 py-3 mb-6 cursor-pointer group" data-view="overview">
@@ -310,8 +316,8 @@
       </div>
     </header>
 
-    <!-- Main View Dynamic Container -->
-    <main id="view-container" class="flex-1 px-4 sm:px-8 py-6 max-w-7xl w-full mx-auto animate-fade-in">
+    <!-- Main View Dynamic Container (Expanded for wide screens) -->
+    <main id="view-container" class="flex-1 px-4 sm:px-8 xl:px-12 py-6 max-w-[1720px] 2xl:max-w-[1850px] w-full mx-auto animate-fade-in">
       <!-- Dynamic View Component loads here -->
     </main>
   </div>
