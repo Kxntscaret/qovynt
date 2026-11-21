@@ -499,3 +499,139 @@ body {
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ==========================================================================
+   QOVYNT System Boot Sequence Animations
+   ========================================================================== */
+.skip-boot #boot-intro-overlay {
+  display: none !important;
+}
+
+#boot-intro-overlay {
+  background-color: #080A18;
+  opacity: 1;
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+#boot-intro-overlay.boot-fade-out {
+  opacity: 0;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.boot-ambient-glow {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.28) 0%, rgba(99, 102, 241, 0.1) 40%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.boot-phase-1 .boot-ambient-glow {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.boot-light-sweep {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 20%, rgba(168, 85, 247, 0.06) 50%, transparent 80%);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.boot-phase-1 .boot-light-sweep {
+  animation: bootSweepAnim 2.5s ease-in-out infinite;
+}
+
+@keyframes bootSweepAnim {
+  0% { transform: translateX(-100%); }
+  50%, 100% { transform: translateX(100%); }
+}
+
+#boot-logo-wrap {
+  opacity: 0;
+  transform: scale(0.82);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#boot-logo-wrap.boot-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.boot-logo-glow {
+  position: absolute;
+  inset: -25px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, rgba(56, 189, 248, 0.2) 40%, transparent 70%);
+  filter: blur(25px);
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.boot-logo-glow.boot-active {
+  opacity: 1;
+}
+
+.boot-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(12px) scale(0.9);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.boot-char.boot-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#boot-tagline {
+  transform: translateY(6px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#boot-tagline.boot-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#boot-progress-wrap {
+  transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#boot-progress-wrap.boot-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.boot-transition-sweep {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(168, 85, 247, 0.25) 0%, transparent 60%);
+  pointer-events: none;
+  animation: bootTransitionFlash 0.65s ease-out forwards;
+}
+
+@keyframes bootTransitionFlash {
+  0% { opacity: 0; transform: scale(0.6); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #boot-intro-overlay {
+    transition: opacity 0.2s ease !important;
+  }
+  .boot-char, #boot-logo-wrap, #boot-tagline, #boot-progress-wrap {
+    transition: opacity 0.2s ease !important;
+    transform: none !important;
+  }
+}

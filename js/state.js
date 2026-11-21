@@ -21,22 +21,31 @@ class StateStore {
     this.isLoaded = false;
   }
 
-  async init() {
-    await this.loadAll();
+  async init(onProgress) {
+    await this.loadAll(onProgress);
     this.isLoaded = true;
     this.notify();
   }
 
-  async loadAll() {
+  async loadAll(onProgress) {
+    let completed = 0;
+    const total = 8;
+    const track = (promise, key) => promise.then(val => {
+      this.data[key] = val;
+      completed++;
+      if (onProgress) onProgress(Math.round((completed / total) * 100));
+      return val;
+    });
+
     const [profile, txs, tasks, events, goals, notes, projects, habits] = await Promise.all([
-      db.getProfile(),
-      db.getCollection('transactions'),
-      db.getCollection('tasks'),
-      db.getCollection('calendarEvents'),
-      db.getCollection('goals'),
-      db.getCollection('notes'),
-      db.getCollection('projects'),
-      db.getCollection('habits')
+      track(db.getProfile(), 'profile'),
+      track(db.getCollection('transactions'), 'transactions'),
+      track(db.getCollection('tasks'), 'tasks'),
+      track(db.getCollection('calendarEvents'), 'calendarEvents'),
+      track(db.getCollection('goals'), 'goals'),
+      track(db.getCollection('notes'), 'notes'),
+      track(db.getCollection('projects'), 'projects'),
+      track(db.getCollection('habits'), 'habits')
     ]);
 
     this.data.profile = profile;

@@ -4,7 +4,8 @@ import { auth } from './auth.js';
 import { db } from './db.js';
 import { setupModals, showConfirmDialog } from './modals.js';
 import { formatThaiDateFull, getDynamicGreeting, showToast, playAudioFeedback } from './utils.js';
-import { initParticles } from './particles.js?v=20261121_03';
+import { initParticles } from './particles.js?v=20261121_06';
+import { BootSequence } from './intro.js?v=20261121_06';
 
 // Import Views
 import { renderOverview } from './views/overview.js?v=20261121_05';
@@ -59,8 +60,16 @@ class Application {
       }
     });
 
-    // Initialize state
-    await state.init();
+    // Enforce initial view before transition: If not logged in, prepare 'auth' view
+    if (!auth.isAuthenticated()) {
+      state.currentView = 'auth';
+    }
+
+    // Run Boot Sequence Intro (Phase 1, 2, 3 with real data progress, Phase 4 transition)
+    const boot = new BootSequence();
+    await boot.run(async (onProgress) => {
+      await state.init(onProgress);
+    });
 
     // Enforce authentication: If not logged in, navigate straight to login screen!
     if (!auth.isAuthenticated()) {

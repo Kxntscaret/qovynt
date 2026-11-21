@@ -41,8 +41,66 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <script>
+    if (sessionStorage.getItem('qovynt_boot_sequence') === 'completed') {
+      document.documentElement.classList.add('skip-boot');
+    }
+  </script>
 </head>
 <body class="bg-[#0a0b16] text-slate-100 min-h-screen flex relative selection:bg-purple-600 selection:text-white">
+
+  <!-- QOVYNT — SYSTEM BOOT SEQUENCE INTRO OVERLAY -->
+  <div id="boot-intro-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#080A18] overflow-hidden select-none">
+    <!-- Ambient Glow Blobs -->
+    <div class="boot-ambient-glow"></div>
+    <div class="boot-light-sweep"></div>
+    
+    <!-- 3D Particle Canvas for Boot -->
+    <canvas id="boot-particles-canvas" class="absolute inset-0 pointer-events-none"></canvas>
+    
+    <!-- Center Core Content -->
+    <div class="relative z-10 flex flex-col items-center text-center px-4 max-w-md w-full">
+      <!-- Logo Container with Soft Glow -->
+      <div id="boot-logo-wrap" class="relative mb-6">
+        <div class="boot-logo-glow"></div>
+        <div class="w-20 h-20 sm:w-24 sm:h-24 relative z-10">
+          <img src="assets/qovynt-logo.svg" alt="QOVYNT" class="w-full h-full drop-shadow-[0_0_25px_rgba(168,85,247,0.6)]" />
+        </div>
+      </div>
+      
+      <!-- Staggered Typography -->
+      <div id="boot-brand-name" class="flex items-center justify-center gap-2 sm:gap-3 text-3xl sm:text-4xl font-black tracking-[0.25em] text-white">
+        <span class="boot-char" style="--i:0">Q</span>
+        <span class="boot-char" style="--i:1">O</span>
+        <span class="boot-char" style="--i:2">V</span>
+        <span class="boot-char" style="--i:3">Y</span>
+        <span class="boot-char" style="--i:4">N</span>
+        <span class="boot-char" style="--i:5">T</span>
+      </div>
+      
+      <!-- Tagline -->
+      <p id="boot-tagline" class="text-xs sm:text-sm font-light text-purple-200/80 tracking-widest mt-2 opacity-0">
+        Your life. Your direction.
+      </p>
+      
+      <!-- Futuristic Progress Bar & Status -->
+      <div id="boot-progress-wrap" class="w-full max-w-[240px] mt-8 flex flex-col items-center opacity-0">
+        <div class="w-full h-[2px] bg-slate-800/80 rounded-full overflow-hidden relative shadow-[0_0_12px_rgba(124,58,237,0.3)]">
+          <div id="boot-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500 rounded-full w-0 transition-all duration-300 ease-out relative">
+            <div class="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full blur-[1px] shadow-[0_0_8px_#38bdf8]"></div>
+          </div>
+        </div>
+        
+        <div class="flex items-center justify-between w-full mt-2.5 px-0.5 text-[10px] font-mono tracking-widest text-slate-400">
+          <span id="boot-status-text" class="flex items-center gap-1.5 text-purple-300">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>
+            INITIALIZING YOUR SPACE...
+          </span>
+          <span id="boot-progress-pct" class="text-slate-400">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 1. Ambient Moving Gradient Background Layer -->
   <div class="bg-ambient-layer">
@@ -357,6 +415,6 @@
   <div id="toast-container"></div>
 
   <!-- Main JavaScript Modules -->
-  <script type="module" src="js/app.js?v=20261121_05"></script>
+  <script type="module" src="js/app.js?v=20261121_06"></script>
 </body>
 </html>
