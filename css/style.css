@@ -635,3 +635,317 @@ body {
     transform: none !important;
   }
 }
+
+/* ==========================================================================
+   MOBILE RESPONSIVE — Full Mobile-First Overrides
+   ========================================================================== */
+
+/* --- Global Mobile Resets --- */
+@media (max-width: 1023px) {
+  body {
+    font-size: 14px;
+    overflow-x: hidden;
+  }
+
+  /* Hide sidebar on mobile by default (toggled via JS) */
+  #sidebar {
+    width: 280px;
+    max-width: 85vw;
+    z-index: 60;
+  }
+
+  /* Sidebar backdrop should cover everything */
+  #sidebar-backdrop {
+    z-index: 55;
+  }
+
+  /* Main content fills full width */
+  .flex-1.flex.flex-col {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Header compact on mobile */
+  header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    gap: 8px !important;
+  }
+
+  /* Hide the subtitle on mobile */
+  #header-subtitle {
+    display: none !important;
+  }
+
+  /* Make greeting text smaller */
+  #header-greeting {
+    font-size: 0.9rem !important;
+  }
+
+  /* Date text smaller */
+  #header-date {
+    font-size: 0.65rem !important;
+  }
+
+  /* Search bar: hide on mobile */
+  #header-search-trigger {
+    display: none !important;
+  }
+
+  /* User profile pill compact */
+  #header-user-btn .hidden.sm\:block {
+    display: none !important;
+  }
+
+  /* Header action buttons smaller */
+  #header-user-btn,
+  #btn-notifications,
+  #btn-theme-toggle {
+    padding: 8px !important;
+  }
+
+  /* Notification & user dropdowns - full width on mobile */
+  #notifications-dropdown,
+  #header-user-dropdown {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: 12px !important;
+    width: auto !important;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  /* Main view container compact padding */
+  #view-container,
+  main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 16px !important;
+    padding-bottom: 24px !important;
+    max-width: 100% !important;
+  }
+
+  /* Glass panels reduce padding on mobile */
+  .glass-panel {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Disable 3D hover float on touch devices */
+  .glass-panel-hover:hover {
+    transform: none;
+  }
+
+  /* Cards grid: single column on small screens */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .sm\:grid-cols-2,
+  .md\:grid-cols-2,
+  .md\:grid-cols-3,
+  .lg\:grid-cols-2,
+  .lg\:grid-cols-3,
+  .lg\:grid-cols-4,
+  .xl\:grid-cols-3,
+  .xl\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Quick action buttons: 2-column grid */
+  .quick-action-btn {
+    padding: 12px 8px;
+  }
+
+  /* Toast notifications: bottom-center on mobile, full width */
+  #toast-container {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 16px !important;
+    align-items: stretch !important;
+  }
+
+  .toast {
+    min-width: unset !important;
+    max-width: unset !important;
+    width: 100% !important;
+    font-size: 0.8rem;
+    padding: 12px 14px;
+  }
+
+  /* Modal overlay: more padding and scroll on mobile */
+  .modal-overlay {
+    padding: 12px !important;
+    align-items: flex-start !important;
+    padding-top: 10vh !important;
+    overflow-y: auto;
+  }
+
+  .modal-overlay > div {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Command palette: full width */
+  #command-palette-modal > div {
+    max-width: 100% !important;
+    margin: 0 12px;
+  }
+
+  /* Cursor glow: hide on touch devices */
+  #cursor-glow {
+    display: none !important;
+  }
+
+  /* Ambient blobs: smaller on mobile to avoid performance issues */
+  .ambient-blob-1 { width: 300px; height: 300px; }
+  .ambient-blob-2 { width: 350px; height: 350px; }
+  .ambient-blob-3 { width: 250px; height: 250px; }
+
+  /* Boot sequence: smaller on mobile */
+  #boot-brand-name {
+    font-size: 1.8rem !important;
+    letter-spacing: 0.15em !important;
+  }
+
+  #boot-tagline {
+    font-size: 0.7rem !important;
+  }
+
+  #boot-progress-wrap {
+    max-width: 200px !important;
+  }
+
+  #boot-logo-wrap .w-20 {
+    width: 60px !important;
+    height: 60px !important;
+  }
+}
+
+/* --- Small phones (< 480px) extra adjustments --- */
+@media (max-width: 479px) {
+  body {
+    font-size: 13px;
+  }
+
+  /* Login card compact */
+  .glass-panel.p-8,
+  .glass-panel.sm\:p-10 {
+    padding: 20px 16px !important;
+  }
+
+  /* Login card: reduce max-width */
+  .max-w-md {
+    max-width: 100% !important;
+  }
+
+  /* Auth button smaller */
+  #auth-btn-google {
+    padding: 10px 12px !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Sidebar nav items compact */
+  .nav-item {
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    gap: 10px;
+  }
+
+  /* Header greeting even smaller */
+  #header-greeting {
+    font-size: 0.82rem !important;
+  }
+
+  /* Two columns for quick actions */
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* --- Tablet (480px - 1023px) --- */
+@media (min-width: 480px) and (max-width: 1023px) {
+  /* Cards: 2 columns on tablet */
+  .grid-cols-2,
+  .sm\:grid-cols-2,
+  .md\:grid-cols-2,
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Quick actions: 4 columns */
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* --- Fix for overview grid layout on mobile --- */
+@media (max-width: 1023px) {
+  /* Overview top stats: stack vertically */
+  .grid.gap-4.mb-6,
+  .grid.gap-5.mb-6 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Overview 2-column layout: stack */
+  .grid.grid-cols-1.xl\:grid-cols-3,
+  .grid.grid-cols-1.lg\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Charts: ensure they don't overflow */
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Tab buttons: scrollable on mobile */
+  .flex.items-center.bg-slate-900\/90 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .flex.items-center.bg-slate-900\/90::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Quote card in sidebar */
+  .sidebar-bg-layer + div .rounded-2xl img {
+    height: 80px !important;
+  }
+
+  /* Fix text truncation */
+  .truncate {
+    max-width: 100%;
+  }
+
+  /* Ensure tables/lists don't overflow */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+}
+
+/* --- Safe area insets for notched phones --- */
+@supports (padding: max(0px)) {
+  @media (max-width: 1023px) {
+    header {
+      padding-top: max(10px, env(safe-area-inset-top)) !important;
+    }
+
+    #toast-container {
+      bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    }
+
+    #sidebar {
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  }
+}
