@@ -74,8 +74,24 @@ class Application {
       await state.init(onProgress);
     });
 
-    // Enforce authentication: If not logged in, navigate straight to login screen!
-    if (!auth.isAuthenticated()) {
+    // After boot: explicitly check Supabase session (handles OAuth redirect tokens in URL)
+    if (db.isCloudActive && db.supabase) {
+      try {
+        const { data: { session } } = await db.supabase.auth.getSession();
+        if (session && session.user) {
+          auth._syncSupabaseUser(session.user);
+        }
+      } catch (e) {
+        console.warn('Post-boot session check:', e);
+      }
+    }
+
+    // Final auth gate: navigate based on current auth state
+    if (auth.isAuthenticated()) {
+      if (state.currentView === 'auth') {
+        state.setView('overview');
+      }
+    } else {
       state.setView('auth');
     }
 
