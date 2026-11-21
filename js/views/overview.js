@@ -305,7 +305,7 @@ export function renderOverview(container) {
                   </div>
                 </div>
 
-                <div class="space-y-3">
+                <div class="space-y-3" id="overview-recent-txs-container">
                   ${recentTxs.length === 0 ? `
                     <div class="text-center py-6 text-slate-400 text-xs">ไม่มีรายการในหมวดนี้</div>
                   ` : recentTxs.map(tx => {
@@ -819,6 +819,45 @@ function initOverviewCharts(metrics) {
   }
 }
 
+function renderOverviewRecentTxs(container) {
+  const listEl = container.querySelector('#overview-recent-txs-container');
+  if (!listEl) return;
+  let txs = state.data.transactions || [];
+  if (currentTxTab === 'income') txs = txs.filter(t => t.type === 'income');
+  else if (currentTxTab === 'expense') txs = txs.filter(t => t.type === 'expense');
+  const recent = txs.slice(0, 5);
+
+  if (recent.length === 0) {
+    listEl.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">ไม่มีรายการในหมวดนี้</div>`;
+    return;
+  }
+
+  listEl.innerHTML = recent.map(tx => {
+    const isInc = tx.type === 'income';
+    const meta = getTxCategoryMeta(tx.category, tx.type);
+    return `
+      <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/40 transition-all duration-200 hover:translate-x-1">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${meta.bg}">
+            <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-white">${tx.title}</div>
+            <div class="text-[10px] text-slate-400">${tx.category} • ${formatThaiDateTime(tx.date)}</div>
+          </div>
+        </div>
+        <div class="text-xs font-semibold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">
+          ${isInc ? '+' : '-'} ${formatMoney(tx.amount)}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (window.lucide) {
+    window.lucide.createIcons({ root: listEl });
+  }
+}
+
 function bindOverviewEvents(container, metrics) {
   container.querySelector('#btn-view-all-txs')?.addEventListener('click', () => state.setView('finance'));
   container.querySelector('#btn-view-all-goals')?.addEventListener('click', () => state.setView('goals'));
@@ -864,7 +903,12 @@ function bindOverviewEvents(container, metrics) {
   container.querySelectorAll('.tx-tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       currentTxTab = e.currentTarget.getAttribute('data-tab');
-      renderOverview(container);
+      // Update tab active styling smoothly without full page re-render
+      container.querySelectorAll('.tx-tab-btn').forEach(b => {
+        const isActive = b.getAttribute('data-tab') === currentTxTab;
+        b.className = `tx-tab-btn px-2.5 py-1 rounded-md transition-all ${isActive ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}`;
+      });
+      renderOverviewRecentTxs(container);
     });
   });
 }

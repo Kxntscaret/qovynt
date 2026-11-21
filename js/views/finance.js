@@ -61,7 +61,7 @@ export function renderFinance(container) {
 
       ${selectedDateFilter ? `
       <!-- Date Filter Banner -->
-      <div class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-purple-600/15 border border-purple-500/30 text-sm stagger-item stagger-1">
+      <div id="finance-date-filter-banner" class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-purple-600/15 border border-purple-500/30 text-sm stagger-item stagger-1">
         <i data-lucide="calendar-days" class="w-4 h-4 text-purple-400 shrink-0"></i>
         <span class="text-purple-200">กรองรายการวันที่: <strong class="text-white">${new Date(selectedDateFilter).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</strong></span>
         <button id="btn-clear-date-filter" class="ml-auto flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-slate-700/50">
@@ -154,11 +154,11 @@ export function renderFinance(container) {
       <!-- Transaction History Table / Cards -->
       <div class="glass-panel overflow-hidden stagger-item stagger-5">
         <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
-          <span class="font-semibold text-white text-sm">ประวัติธุรกรรมทั้งหมด (${txs.length} รายการ)</span>
+          <span class="font-semibold text-white text-sm">ประวัติธุรกรรมทั้งหมด <span id="finance-tx-count" class="text-xs text-purple-300 font-normal">(${txs.length} รายการ)</span></span>
           <span class="text-xs text-slate-400">บันทึกวันและเวลาอย่างละเอียด</span>
         </div>
 
-        <div class="divide-y divide-slate-800/60">
+        <div class="divide-y divide-slate-800/60" id="finance-tx-list-container">
           ${txs.length === 0 ? `
             <div class="p-8 text-center text-slate-400 text-xs">
               <i data-lucide="receipt" class="w-8 h-8 mx-auto text-slate-600 mb-2"></i>
@@ -326,11 +326,108 @@ function initFinanceCharts() {
   });
 }
 
+function getFilteredFinanceTransactions() {
+  let txs = state.data.transactions || [];
+  if (selectedDateFilter) {
+    txs = txs.filter(t => t.date && t.date.startsWith(selectedDateFilter));
+  }
+  if (currentFilterType !== 'all') {
+    txs = txs.filter(t => t.type === currentFilterType);
+  }
+  if (currentCategory !== 'all') {
+    txs = txs.filter(t => t.category === currentCategory);
+  }
+  if (currentSearch.trim()) {
+    const q = currentSearch.toLowerCase();
+    txs = txs.filter(t => t.title.toLowerCase().includes(q) || (t.note && t.note.toLowerCase().includes(q)));
+  }
+  return txs;
+}
+
+function renderFinanceTransactionList(container) {
+  const listEl = container.querySelector('#finance-tx-list-container');
+  const countEl = container.querySelector('#finance-tx-count');
+  if (!listEl) return;
+
+  const txs = getFilteredFinanceTransactions();
+  if (countEl) countEl.textContent = `(${txs.length} รายการ)`;
+
+  if (txs.length === 0) {
+    listEl.innerHTML = `
+      <div class="p-8 text-center text-slate-400 text-xs">
+        <i data-lucide="receipt" class="w-8 h-8 mx-auto text-slate-600 mb-2"></i>
+        ไม่พบรายการที่ตรงกับเงื่อนไขการค้นหา
+      </div>
+    `;
+  } else {
+    listEl.innerHTML = txs.map(tx => {
+      const isInc = tx.type === 'income';
+      const iconBg = isInc ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+      const iconName = isInc ? 'arrow-down-left' : 'arrow-up-right';
+      return `
+        <div class="p-4 hover:bg-slate-800/30 transition-all duration-200 hover:translate-x-1 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
+              <i data-lucide="${iconName}" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-white truncate">${tx.title}</div>
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-500/15 text-purple-300 border border-purple-500/20">${tx.category}</span>
+                <span class="text-[11px] text-slate-400 flex items-center gap-1">
+                  <i data-lucide="clock" class="w-3 h-3"></i>
+                  ${formatThaiDateTime(tx.date)}
+                </span>
+                ${tx.note ? `<span class="text-[11px] text-slate-400 italic">• ${tx.note}</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 shrink-0">
+            <div class="text-right">
+              <div class="text-sm font-bold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">
+                ${isInc ? '+' : '-'} ${formatMoney(tx.amount)}
+              </div>
+            </div>
+            <button class="btn-delete-tx text-slate-500 hover:text-rose-400 transition-colors p-1" data-id="${tx.id}" title="ลบรายการนี้">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Bind delete buttons inside listEl
+  listEl.querySelectorAll('.btn-delete-tx').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      const confirmed = await showConfirmDialog({
+        title: 'ยืนยันการลบรายการเงิน',
+        message: 'คุณแน่ใจว่าต้องการลบรายการธุรกรรมนี้ใช่หรือไม่? ข้อมูลนี้จะถูกนำออกจากระบบอย่างถาวร',
+        confirmText: 'ลบรายการทันที',
+        cancelText: 'ยกเลิก',
+        type: 'danger',
+        icon: 'trash-2'
+      });
+
+      if (confirmed) {
+        state.deleteTransaction(id);
+      }
+    });
+  });
+
+  if (window.lucide) {
+    window.lucide.createIcons({ root: listEl });
+  }
+}
+
 function bindFinanceEvents(container) {
   // Clear date filter (from calendar navigation)
   container.querySelector('#btn-clear-date-filter')?.addEventListener('click', () => {
     selectedDateFilter = null;
-    renderFinance(container);
+    container.querySelector('#finance-date-filter-banner')?.remove();
+    renderFinanceTransactionList(container);
   });
 
   container.querySelector('#btn-add-tx')?.addEventListener('click', () => {
@@ -340,21 +437,25 @@ function bindFinanceEvents(container) {
   container.querySelectorAll('.tx-filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       currentFilterType = e.currentTarget.getAttribute('data-filter');
-      renderFinance(container);
+      container.querySelectorAll('.tx-filter-btn').forEach(b => {
+        const isActive = b.getAttribute('data-filter') === currentFilterType;
+        b.className = `tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${isActive ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}`;
+      });
+      renderFinanceTransactionList(container);
     });
   });
 
   container.querySelector('#tx-cat-select')?.addEventListener('change', (e) => {
     currentCategory = e.target.value;
-    renderFinance(container);
+    renderFinanceTransactionList(container);
   });
 
   container.querySelector('#tx-search-input')?.addEventListener('input', (e) => {
     currentSearch = e.target.value;
-    renderFinance(container);
+    renderFinanceTransactionList(container);
   });
 
-  // Modern Decision Dialog for Deletion
+  // Modern Decision Dialog for Deletion (initial list bindings)
   container.querySelectorAll('.btn-delete-tx').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
