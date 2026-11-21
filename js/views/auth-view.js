@@ -19,6 +19,10 @@ export function renderAuth(container) {
       
       <!-- Animated Blurred Brand Background (QOVYNT floating typography & orbs) -->
       <div class="auth-brand-backdrop">
+        <div class="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <img src="assets/menu-bg.jfif" alt="Backdrop" class="w-full h-full object-cover scale-125 filter blur-lg brightness-60 contrast-110 opacity-50" />
+          <div class="absolute inset-0 bg-[#0a0b16]/75 backdrop-blur-sm"></div>
+        </div>
         <div class="floating-brand-text brand-text-1">QOVYNT</div>
         <div class="floating-brand-text brand-text-2">QOVYNT</div>
       </div>
