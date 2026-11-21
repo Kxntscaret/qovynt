@@ -84,21 +84,34 @@ class AuthManager {
 
   // 1. Google OAuth Sign In (Real Flow)
   async signInWithGoogle() {
+    console.log('[QOVYNT Auth] signInWithGoogle called');
+    console.log('[QOVYNT Auth] db.isCloudActive:', db.isCloudActive);
+    console.log('[QOVYNT Auth] db.supabase:', !!db.supabase);
+    
     // If Supabase is connected, trigger real cloud OAuth
     if (db.isCloudActive && db.supabase) {
       try {
+        console.log('[QOVYNT Auth] Calling signInWithOAuth...');
         const { data, error } = await db.supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
             redirectTo: window.location.origin + window.location.pathname
           }
         });
+        console.log('[QOVYNT Auth] OAuth response data:', data);
+        console.log('[QOVYNT Auth] OAuth response error:', error);
         if (error) {
           showToast(`Google Login: ${error.message}`, 'error');
           return false;
         }
+        // signInWithOAuth returns a URL - the browser should redirect automatically
+        if (data?.url) {
+          console.log('[QOVYNT Auth] Redirecting to:', data.url);
+          window.location.href = data.url;
+        }
         return true;
       } catch (err) {
+        console.error('[QOVYNT Auth] OAuth exception:', err);
         showToast(`Google Login Error: ${err.message}`, 'error');
         return false;
       }

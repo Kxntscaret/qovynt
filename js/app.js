@@ -52,11 +52,14 @@ class Application {
       this.renderCurrentView();
     });
 
-    // Listen to Auth changes
+    // Listen to Auth changes — auto-navigate on login/logout
     auth.subscribe((user) => {
       this.updateUserProfile(user);
       if (!user) {
         state.setView('auth');
+      } else if (state.currentView === 'auth') {
+        // User just logged in (e.g. Google OAuth redirect) → go to overview
+        state.setView('overview');
       }
     });
 

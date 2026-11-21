@@ -1,6 +1,7 @@
 // 100% Real Production Login & Registration View with Animated QOVYNT Backdrop & Modern Validation
 import { auth } from '../auth.js';
 import { db } from '../db.js';
+import { CONFIG } from '../config.js';
 import { state } from '../state.js';
 import { showToast } from '../utils.js';
 
@@ -274,9 +275,11 @@ function bindAuthEvents(container) {
   // Custom Google Modal Controls (Zero browser native prompt!)
   // Direct Google Sign In Button
   container.querySelector('#auth-btn-google')?.addEventListener('click', async () => {
+    console.log('[QOVYNT] Google button clicked! db.isCloudActive:', db.isCloudActive, 'db.supabase:', !!db.supabase);
     if (db.isCloudActive && db.supabase) {
       await auth.signInWithGoogle();
     } else {
+      console.warn('[QOVYNT] Cloud not active! window.supabase:', !!window.supabase, 'CONFIG:', JSON.stringify(CONFIG?.SUPABASE));
       showToast('ยังไม่ได้ระบุ Supabase URL & Key ใน js/config.js เพื่อเชื่อมต่อกับ Google', 'warning');
     }
   });
