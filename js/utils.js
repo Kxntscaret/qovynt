@@ -45,6 +45,35 @@ export function formatMoney(amount, currency = '฿') {
   return `${currency} ${num.toLocaleString('th-TH')}`;
 }
 
+// 5. Finance Smooth Number Counter Animation
+export function animateCounter(element, targetValue, duration = 1200, prefix = '฿ ', suffix = '') {
+  if (!element) return;
+  const start = 0;
+  const target = Number(targetValue) || 0;
+  const startTime = performance.now();
+
+  function easeOutExpo(x) {
+    return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+  }
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeOutExpo(progress);
+    const currentVal = Math.round(start + (target - start) * easedProgress);
+
+    element.textContent = `${prefix}${currentVal.toLocaleString('th-TH')}${suffix}`;
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      element.textContent = `${prefix}${target.toLocaleString('th-TH')}${suffix}`;
+    }
+  }
+
+  requestAnimationFrame(update);
+}
+
 export function getDynamicGreeting(name = 'คุณ') {
   const hour = new Date().getHours();
   let greeting = 'สวัสดี';
@@ -134,7 +163,7 @@ export function showToast(message, type = 'info', duration = 3500) {
   }, duration);
 }
 
-// Subtle Audio Synthesizer (Zero external audio files needed!)
+// Subtle Audio Synthesizer
 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
@@ -164,15 +193,14 @@ export function playAudioFeedback(type = 'click') {
       osc.stop(now + 0.05);
     } else if (type === 'success') {
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(523.25, now); // C5
-      osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-      osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+      osc.frequency.setValueAtTime(783.99, now + 0.16);
       gain.gain.setValueAtTime(0.08, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc.start(now);
       osc.stop(now + 0.35);
     } else if (type === 'complete') {
-      // High chord
       osc.type = 'sine';
       osc.frequency.setValueAtTime(440, now);
       osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
@@ -181,9 +209,7 @@ export function playAudioFeedback(type = 'click') {
       osc.start(now);
       osc.stop(now + 0.4);
     }
-  } catch (e) {
-    // Audio context not allowed without interaction or unsupported
-  }
+  } catch (e) {}
 }
 
 // Pure Canvas Confetti for Celebration
@@ -227,7 +253,7 @@ export function triggerConfetti() {
     particles.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += 0.35; // Gravity
+      p.vy += 0.35;
       p.rotation += p.rotSpeed;
       p.opacity = Math.max(0, 1 - (elapsed / 2500));
 

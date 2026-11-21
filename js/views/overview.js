@@ -1,10 +1,10 @@
-// 1. Overview Page View - Faithful, high-fidelity implementation of the design reference
+// 1. Overview Page View - Faithful, high-fidelity implementation with 7 Core Animations
 import { state } from '../state.js';
-import { formatMoney, formatThaiDateShort, formatThaiDateTime, triggerConfetti } from '../utils.js';
+import { formatMoney, formatThaiDateShort, formatThaiDateTime, triggerConfetti, animateCounter } from '../utils.js';
 
 let financeLineChart = null;
 let expenseDonutChart = null;
-let currentTxTab = 'all'; // 'all', 'income', 'expense'
+let currentTxTab = 'all';
 
 export function renderOverview(container) {
   const metrics = state.getFinancialMetrics();
@@ -14,7 +14,6 @@ export function renderOverview(container) {
   const events = state.data.calendarEvents.slice(0, 5);
   const note = state.data.notes[0] || { title: 'บันทึกย่อ', content: 'ยังไม่มีบันทึก' };
 
-  // Filter recent transactions
   let recentTxs = state.data.transactions;
   if (currentTxTab === 'income') {
     recentTxs = recentTxs.filter(t => t.type === 'income');
@@ -24,18 +23,18 @@ export function renderOverview(container) {
   recentTxs = recentTxs.slice(0, 5);
 
   container.innerHTML = `
-    <div class="space-y-6 animate-fade-in pb-12">
-      <!-- 4 Top Metric Stat Cards -->
+    <div class="space-y-6 pb-12">
+      <!-- 4 Top Metric Stat Cards (Stagger Entrance & 4. Hover Float & 5. Number Count-up) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Income Card -->
-        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between">
+        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between stagger-item stagger-1">
           <div class="flex items-start justify-between">
             <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <i data-lucide="wallet" class="w-6 h-6"></i>
             </div>
             <div class="text-right">
               <span class="text-xs font-medium text-slate-400">รายรับเดือนนี้</span>
-              <div class="text-2xl font-bold text-white tracking-tight mt-1">${formatMoney(metrics.totalIncome)}</div>
+              <div id="metric-income-val" class="text-2xl font-bold text-white tracking-tight mt-1">฿ 0</div>
             </div>
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
@@ -43,7 +42,6 @@ export function renderOverview(container) {
               <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
               <span>+12%</span>
             </div>
-            <!-- Sparkline SVG -->
             <svg class="w-24 h-6 text-emerald-400" viewBox="0 0 100 25" fill="none">
               <path d="M0 20 Q 25 15, 50 18 T 100 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
             </svg>
@@ -51,14 +49,14 @@ export function renderOverview(container) {
         </div>
 
         <!-- Expense Card -->
-        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between">
+        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between stagger-item stagger-2">
           <div class="flex items-start justify-between">
             <div class="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
               <i data-lucide="receipt" class="w-6 h-6"></i>
             </div>
             <div class="text-right">
               <span class="text-xs font-medium text-slate-400">รายจ่ายเดือนนี้</span>
-              <div class="text-2xl font-bold text-white tracking-tight mt-1">${formatMoney(metrics.totalExpense)}</div>
+              <div id="metric-expense-val" class="text-2xl font-bold text-white tracking-tight mt-1">฿ 0</div>
             </div>
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
@@ -66,7 +64,6 @@ export function renderOverview(container) {
               <i data-lucide="trending-down" class="w-3.5 h-3.5"></i>
               <span>-8%</span>
             </div>
-            <!-- Sparkline SVG -->
             <svg class="w-24 h-6 text-rose-400" viewBox="0 0 100 25" fill="none">
               <path d="M0 8 Q 30 22, 60 12 T 100 20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
             </svg>
@@ -74,14 +71,14 @@ export function renderOverview(container) {
         </div>
 
         <!-- Net Balance Card -->
-        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between">
+        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between stagger-item stagger-3">
           <div class="flex items-start justify-between">
             <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
               <i data-lucide="credit-card" class="w-6 h-6"></i>
             </div>
             <div class="text-right">
               <span class="text-xs font-medium text-slate-400">เงินคงเหลือ</span>
-              <div class="text-2xl font-bold ${metrics.balance >= 0 ? 'text-white' : 'text-rose-400'} tracking-tight mt-1">${formatMoney(metrics.balance)}</div>
+              <div id="metric-balance-val" class="text-2xl font-bold text-white tracking-tight mt-1">฿ 0</div>
             </div>
           </div>
           <div class="flex items-center justify-between mt-4 pt-2 border-t border-slate-800/60 text-xs">
@@ -91,14 +88,14 @@ export function renderOverview(container) {
         </div>
 
         <!-- Savings Goal Card -->
-        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between">
+        <div class="glass-panel glass-panel-hover p-5 relative overflow-hidden flex flex-col justify-between stagger-item stagger-4">
           <div class="flex items-start justify-between">
             <div class="w-12 h-12 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
               <i data-lucide="target" class="w-6 h-6"></i>
             </div>
             <div class="text-right">
               <span class="text-xs font-medium text-slate-400">เป้าหมายการออม</span>
-              <div class="text-2xl font-bold text-white tracking-tight mt-1">${metrics.savingsPercent}%</div>
+              <div id="metric-savings-val" class="text-2xl font-bold text-white tracking-tight mt-1">0%</div>
             </div>
           </div>
           <div class="mt-4 pt-2 border-t border-slate-800/60">
@@ -119,8 +116,8 @@ export function renderOverview(container) {
         <!-- Left & Center Column (8 Cols) -->
         <div class="xl:col-span-8 space-y-6">
           
-          <!-- Finance Overview Charts (Line + Donut) -->
-          <div class="glass-panel p-5">
+          <!-- 5. Finance Overview Charts (Progressive Line Draw Animation) -->
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-3">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-800/80 gap-3">
               <div class="flex items-center gap-2">
                 <span class="font-semibold text-white text-base">ภาพรวมการเงิน</span>
@@ -165,19 +162,17 @@ export function renderOverview(container) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <!-- Recent Transactions Widget -->
-            <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="glass-panel glass-panel-hover p-5 flex flex-col justify-between stagger-item stagger-4">
               <div>
                 <div class="flex items-center justify-between mb-4">
                   <span class="font-semibold text-white text-base">รายการล่าสุด</span>
-                  <!-- Tabs -->
                   <div class="flex items-center bg-slate-900/70 p-0.5 rounded-lg border border-slate-800 text-xs">
-                    <button class="tx-tab-btn px-2.5 py-1 rounded-md transition-all ${currentTxTab === 'all' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'}" data-tab="all">ทั้งหมด</button>
-                    <button class="tx-tab-btn px-2.5 py-1 rounded-md transition-all ${currentTxTab === 'income' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'}" data-tab="income">รายรับ</button>
-                    <button class="tx-tab-btn px-2.5 py-1 rounded-md transition-all ${currentTxTab === 'expense' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'}" data-tab="expense">รายจ่าย</button>
+                    <button class="tx-tab-btn px-2.5 py-1 rounded-md transition-all ${currentTxTab === 'all' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}" data-tab="all">ทั้งหมด</button>
+                    <button class="tx-tab-btn px-2.5 py-1 rounded-md transition-all ${currentTxTab === 'income' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}" data-tab="income">รายรับ</button>
+                    <button class="tx-tab-btn px-2.5 py-1 rounded-md transition-all ${currentTxTab === 'expense' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}" data-tab="expense">รายจ่าย</button>
                   </div>
                 </div>
 
-                <!-- Transaction Rows -->
                 <div class="space-y-3">
                   ${recentTxs.length === 0 ? `
                     <div class="text-center py-6 text-slate-400 text-xs">ไม่มีรายการในหมวดนี้</div>
@@ -186,7 +181,7 @@ export function renderOverview(container) {
                     const iconName = isInc ? 'arrow-down-left' : 'arrow-up-right';
                     const iconBg = isInc ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30';
                     return `
-                      <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/40 transition-colors">
+                      <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/40 transition-all duration-200 hover:translate-x-1">
                         <div class="flex items-center gap-3">
                           <div class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
                             <i data-lucide="${iconName}" class="w-4 h-4"></i>
@@ -206,19 +201,21 @@ export function renderOverview(container) {
               </div>
 
               <div class="mt-4 pt-3 border-t border-slate-800/60">
-                <button id="btn-view-all-txs" class="text-xs text-purple-400 hover:text-purple-300 font-medium flex items-center gap-1 transition-colors">
-                  ดูประวัติทั้งหมด →
+                <button id="btn-view-all-txs" class="text-xs text-purple-400 hover:text-purple-300 font-medium flex items-center gap-1 transition-colors group">
+                  <span>ดูประวัติทั้งหมด</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1"></i>
                 </button>
               </div>
             </div>
 
             <!-- My Goals Widget -->
-            <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="glass-panel glass-panel-hover p-5 flex flex-col justify-between stagger-item stagger-4">
               <div>
                 <div class="flex items-center justify-between mb-4">
                   <span class="font-semibold text-white text-base">เป้าหมายของฉัน</span>
-                  <button id="btn-view-all-goals" class="text-xs text-purple-400 hover:text-purple-300 font-medium flex items-center gap-1">
-                    ดูทั้งหมด →
+                  <button id="btn-view-all-goals" class="text-xs text-purple-400 hover:text-purple-300 font-medium flex items-center gap-1 group">
+                    <span>ดูทั้งหมด</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1"></i>
                   </button>
                 </div>
 
@@ -226,7 +223,7 @@ export function renderOverview(container) {
                   ${goals.map(g => {
                     const percent = Math.min(100, Math.round((g.current / g.target) * 100));
                     return `
-                      <div class="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 hover:border-slate-700/80 transition-all">
+                      <div class="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60 hover:border-slate-700/80 transition-all hover:scale-[1.01]">
                         <div class="flex items-center justify-between mb-1.5">
                           <div class="flex items-center gap-2.5">
                             <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs">
@@ -255,7 +252,7 @@ export function renderOverview(container) {
           </div>
 
           <!-- Active Projects in Progress -->
-          <div class="glass-panel p-5">
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-5">
             <div class="flex items-center justify-between mb-4">
               <span class="font-semibold text-white text-base">โปรเจกต์ที่กำลังทำ</span>
               <button id="btn-view-all-projects" class="text-xs text-purple-400 hover:text-purple-300 font-medium">ดูทั้งหมด →</button>
@@ -263,7 +260,7 @@ export function renderOverview(container) {
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               ${projects.map(p => `
-                <div class="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 hover:border-purple-500/40 transition-all group">
+                <div class="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-1 group">
                   <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors">${p.title}</span>
                     <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">${p.stage}</span>
@@ -286,7 +283,7 @@ export function renderOverview(container) {
         <div class="xl:col-span-4 space-y-6">
           
           <!-- Mini Calendar Widget -->
-          <div class="glass-panel p-5">
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-2">
             <div class="flex items-center justify-between mb-4">
               <span class="text-sm font-semibold text-white" id="mini-cal-title">พฤศจิกายน 2569</span>
               <div class="flex items-center gap-1 text-slate-400">
@@ -294,18 +291,14 @@ export function renderOverview(container) {
                 <button class="p-1 hover:text-white transition-colors" id="cal-next-btn"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
               </div>
             </div>
-            <!-- Weekday headers -->
             <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-400 mb-2">
               <span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span>
             </div>
-            <!-- Days grid -->
-            <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium" id="mini-cal-days">
-              <!-- Rendered via JS -->
-            </div>
+            <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium" id="mini-cal-days"></div>
           </div>
 
           <!-- Motivational Mountain Night Quote Card -->
-          <div class="relative rounded-2xl overflow-hidden border border-purple-500/20 shadow-xl group">
+          <div class="relative rounded-2xl overflow-hidden border border-purple-500/20 shadow-xl group cursor-pointer transition-transform duration-300 hover:-translate-y-1 stagger-item stagger-3">
             <img src="assets/night-mountains.svg" alt="Night Mountains" class="w-full h-36 object-cover transition-transform duration-700 group-hover:scale-105" />
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent p-4 flex flex-col justify-end">
               <p class="text-xs italic text-slate-200 font-medium">"การจัดการชีวิตที่ดี เริ่มจากการรู้จักตัวเอง"</p>
@@ -313,8 +306,8 @@ export function renderOverview(container) {
             </div>
           </div>
 
-          <!-- Quick Access Action Buttons (2x2 Grid) -->
-          <div class="glass-panel p-5">
+          <!-- Quick Access Action Buttons (4. Hover Float & Micro Scale) -->
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-4">
             <div class="text-xs font-semibold text-slate-400 mb-3 flex items-center justify-between">
               <span>Quick Access</span>
               <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
@@ -351,7 +344,7 @@ export function renderOverview(container) {
           </div>
 
           <!-- Tasks Checklist Widget -->
-          <div class="glass-panel p-5">
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-4">
             <div class="flex items-center justify-between mb-4">
               <span class="font-semibold text-white text-base">งานที่ต้องทำ (Tasks)</span>
               <button id="btn-view-all-tasks" class="text-xs text-purple-400 hover:text-purple-300 font-medium">ดูทั้งหมด →</button>
@@ -377,7 +370,7 @@ export function renderOverview(container) {
           </div>
 
           <!-- Today's Schedule Agenda -->
-          <div class="glass-panel p-5">
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-5">
             <div class="flex items-center justify-between mb-4">
               <span class="font-semibold text-white text-base">ปฏิทินวันนี้</span>
               <button id="btn-view-all-calendar" class="text-xs text-purple-400 hover:text-purple-300 font-medium">ดูทั้งหมด →</button>
@@ -385,7 +378,7 @@ export function renderOverview(container) {
 
             <div class="space-y-3">
               ${events.map(ev => `
-                <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/50 border border-slate-800/80">
+                <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/50 border border-slate-800/80 hover:border-purple-500/40 transition-colors">
                   <div class="w-2 h-2 rounded-full bg-purple-400 mt-1.5 shrink-0"></div>
                   <div>
                     <div class="text-[10px] font-semibold text-purple-400">${ev.startTime} - ${ev.endTime}</div>
@@ -397,7 +390,7 @@ export function renderOverview(container) {
           </div>
 
           <!-- Quick Sticky Note Widget -->
-          <div class="glass-panel p-5 border-amber-500/20 bg-amber-500/5">
+          <div class="glass-panel glass-panel-hover p-5 border-amber-500/20 bg-amber-500/5 stagger-item stagger-5">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2 text-amber-400 font-semibold text-xs">
                 <i data-lucide="sticky-note" class="w-4 h-4"></i>
@@ -417,12 +410,16 @@ export function renderOverview(container) {
     </div>
   `;
 
-  // Initialize Icons
   if (window.lucide) {
     window.lucide.createIcons({ root: container });
   }
 
-  // Bind Listeners
+  // 5. Trigger Number Count-Up Animations
+  animateCounter(container.querySelector('#metric-income-val'), metrics.totalIncome, 1300, '฿ ');
+  animateCounter(container.querySelector('#metric-expense-val'), metrics.totalExpense, 1300, '฿ ');
+  animateCounter(container.querySelector('#metric-balance-val'), metrics.balance, 1300, '฿ ');
+  animateCounter(container.querySelector('#metric-savings-val'), metrics.savingsPercent, 1300, '', '%');
+
   bindOverviewEvents(container, metrics);
   renderMiniCalendar();
   initOverviewCharts(metrics);
@@ -437,22 +434,18 @@ function renderMiniCalendar() {
   const currentYear = now.getFullYear();
   const todayDate = now.getDate();
 
-  // First day of month
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  // Total days in month
   const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   let html = '';
-  // Empty slots
   for (let i = 0; i < firstDay; i++) {
     html += `<span class="py-1 text-slate-700"></span>`;
   }
-  // Days
   for (let d = 1; d <= totalDays; d++) {
     const isToday = d === todayDate;
     if (isToday) {
       html += `
-        <span class="py-1 w-7 h-7 mx-auto rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shadow-lg shadow-purple-600/40">
+        <span class="py-1 w-7 h-7 mx-auto rounded-full bg-purple-600 text-white font-bold flex items-center justify-center shadow-lg shadow-purple-600/40 transition-transform hover:scale-110">
           ${d}
         </span>
       `;
@@ -468,8 +461,8 @@ function renderMiniCalendar() {
   container.innerHTML = html;
 }
 
+// 5. Finance Chart Progressive Line Drawing Animation
 function initOverviewCharts(metrics) {
-  // Destroy existing charts if reloading
   if (financeLineChart) financeLineChart.destroy();
   if (expenseDonutChart) expenseDonutChart.destroy();
 
@@ -491,7 +484,8 @@ function initOverviewCharts(metrics) {
             borderWidth: 2.5,
             tension: 0.4,
             fill: true,
-            pointRadius: 3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
             pointBackgroundColor: '#10b981'
           },
           {
@@ -502,7 +496,8 @@ function initOverviewCharts(metrics) {
             borderWidth: 2.5,
             tension: 0.4,
             fill: true,
-            pointRadius: 3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
             pointBackgroundColor: '#f43f5e'
           }
         ]
@@ -510,6 +505,10 @@ function initOverviewCharts(metrics) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 1600,
+          easing: 'easeInOutQuart'
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -552,13 +551,19 @@ function initOverviewCharts(metrics) {
           data: dataValues.length ? dataValues : [1680, 945, 788, 630, 525, 682],
           backgroundColor: colors,
           borderWidth: 0,
-          hoverOffset: 4
+          hoverOffset: 6
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '72%',
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 1400,
+          easing: 'easeOutQuart'
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -575,14 +580,12 @@ function initOverviewCharts(metrics) {
 }
 
 function bindOverviewEvents(container, metrics) {
-  // Navigation button binds
   container.querySelector('#btn-view-all-txs')?.addEventListener('click', () => state.setView('finance'));
   container.querySelector('#btn-view-all-goals')?.addEventListener('click', () => state.setView('goals'));
   container.querySelector('#btn-view-all-projects')?.addEventListener('click', () => state.setView('projects'));
   container.querySelector('#btn-view-all-tasks')?.addEventListener('click', () => state.setView('tasks'));
   container.querySelector('#btn-view-all-calendar')?.addEventListener('click', () => state.setView('calendar'));
 
-  // Quick Action buttons
   container.querySelector('#quick-btn-tx')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('open-modal', { detail: { modal: 'add-transaction' } }));
   });
@@ -599,7 +602,6 @@ function bindOverviewEvents(container, metrics) {
     window.dispatchEvent(new CustomEvent('open-modal', { detail: { modal: 'add-goal' } }));
   });
 
-  // Task Checkboxes
   container.querySelectorAll('.custom-checkbox').forEach(cb => {
     cb.addEventListener('change', (e) => {
       const taskId = e.target.getAttribute('data-task-id');
@@ -607,7 +609,6 @@ function bindOverviewEvents(container, metrics) {
     });
   });
 
-  // Transaction Tabs
   container.querySelectorAll('.tx-tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       currentTxTab = e.currentTarget.getAttribute('data-tab');

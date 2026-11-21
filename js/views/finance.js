@@ -1,6 +1,6 @@
-// 2. Finance View - Complete personal finance tracker with detailed timestamps and charts
+// 2. Finance View - Complete personal finance tracker with progressive animations
 import { state } from '../state.js';
-import { formatMoney, formatThaiDateTime, formatThaiDateShort, showToast } from '../utils.js';
+import { formatMoney, formatThaiDateTime, formatThaiDateShort, showToast, animateCounter } from '../utils.js';
 
 let financeDetailChart = null;
 let currentFilterType = 'all';
@@ -11,7 +11,6 @@ export function renderFinance(container) {
   const metrics = state.getFinancialMetrics();
   let txs = state.data.transactions;
 
-  // Filter logic
   if (currentFilterType !== 'all') {
     txs = txs.filter(t => t.type === currentFilterType);
   }
@@ -23,13 +22,13 @@ export function renderFinance(container) {
     txs = txs.filter(t => t.title.toLowerCase().includes(q) || (t.note && t.note.toLowerCase().includes(q)));
   }
 
-  // Get distinct categories
   const categories = Array.from(new Set(state.data.transactions.map(t => t.category).filter(Boolean)));
+  const savingsRate = metrics.totalIncome > 0 ? Math.max(0, Math.round((metrics.balance / metrics.totalIncome) * 100)) : 0;
 
   container.innerHTML = `
-    <div class="space-y-6 animate-fade-in pb-12">
+    <div class="space-y-6 pb-12">
       <!-- Header Banner -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 stagger-item stagger-1">
         <div>
           <h1 class="text-2xl font-bold text-white flex items-center gap-2">
             <i data-lucide="wallet" class="w-6 h-6 text-purple-400"></i>
@@ -38,62 +37,60 @@ export function renderFinance(container) {
           <p class="text-xs text-slate-400 mt-1">บันทึกทุกการเคลื่อนไหวทางการเงิน พร้อมวันเวลาชัดเจนและกราฟวิเคราะห์</p>
         </div>
         <div class="flex items-center gap-2.5">
-          <button id="btn-export-csv" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 text-xs font-medium border border-slate-700 transition-colors flex items-center gap-2">
+          <button id="btn-export-csv" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 text-xs font-medium border border-slate-700 transition-all hover:scale-105 flex items-center gap-2">
             <i data-lucide="download" class="w-4 h-4"></i> ส่งออก CSV
           </button>
-          <button id="btn-add-tx" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+          <button id="btn-add-tx" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-2">
             <i data-lucide="plus-circle" class="w-4 h-4"></i> บันทึกรายการใหม่
           </button>
         </div>
       </div>
 
-      <!-- Financial Metrics Summary Cards -->
+      <!-- Financial Metrics Summary Cards (5. Number Count Up & 4. Hover Float) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="glass-panel p-4 flex items-center gap-4">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center gap-4 stagger-item stagger-1">
           <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
             <i data-lucide="arrow-down-left" class="w-6 h-6"></i>
           </div>
           <div>
             <div class="text-xs text-slate-400">รายรับรวมทั้งหมด</div>
-            <div class="text-xl font-bold text-emerald-400 mt-0.5">${formatMoney(metrics.totalIncome)}</div>
+            <div id="finance-total-income" class="text-xl font-bold text-emerald-400 mt-0.5">฿ 0</div>
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center gap-4">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center gap-4 stagger-item stagger-2">
           <div class="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
             <i data-lucide="arrow-up-right" class="w-6 h-6"></i>
           </div>
           <div>
             <div class="text-xs text-slate-400">รายจ่ายรวมทั้งหมด</div>
-            <div class="text-xl font-bold text-rose-400 mt-0.5">${formatMoney(metrics.totalExpense)}</div>
+            <div id="finance-total-expense" class="text-xl font-bold text-rose-400 mt-0.5">฿ 0</div>
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center gap-4">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center gap-4 stagger-item stagger-3">
           <div class="w-12 h-12 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
             <i data-lucide="piggy-bank" class="w-6 h-6"></i>
           </div>
           <div>
             <div class="text-xs text-slate-400">เงินคงเหลือสุทธิ</div>
-            <div class="text-xl font-bold text-white mt-0.5">${formatMoney(metrics.balance)}</div>
+            <div id="finance-net-balance" class="text-xl font-bold text-white mt-0.5">฿ 0</div>
           </div>
         </div>
 
-        <div class="glass-panel p-4 flex items-center gap-4">
+        <div class="glass-panel glass-panel-hover p-4 flex items-center gap-4 stagger-item stagger-4">
           <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
             <i data-lucide="percent" class="w-6 h-6"></i>
           </div>
           <div>
             <div class="text-xs text-slate-400">อัตราการออม</div>
-            <div class="text-xl font-bold text-cyan-400 mt-0.5">
-              ${metrics.totalIncome > 0 ? Math.max(0, Math.round((metrics.balance / metrics.totalIncome) * 100)) : 0}%
-            </div>
+            <div id="finance-savings-rate" class="text-xl font-bold text-cyan-400 mt-0.5">0%</div>
           </div>
         </div>
       </div>
 
-      <!-- Financial Chart Section -->
-      <div class="glass-panel p-5">
+      <!-- Financial Chart Section (5. Progressive Chart Animation) -->
+      <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-3">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
           <span class="font-semibold text-white text-sm">การเปรียบเทียบรายรับและรายจ่าย</span>
           <span class="text-xs text-slate-400">อัปเดตล่าสุด: วันนี้</span>
@@ -104,8 +101,7 @@ export function renderFinance(container) {
       </div>
 
       <!-- Filter & Search Toolbar -->
-      <div class="glass-panel p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        <!-- Search bar -->
+      <div class="glass-panel p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 stagger-item stagger-4">
         <div class="relative flex-1">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
           <input 
@@ -117,16 +113,13 @@ export function renderFinance(container) {
           />
         </div>
 
-        <!-- Filter Controls -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- Type Filter Tabs -->
           <div class="flex items-center bg-slate-900/80 p-0.5 rounded-xl border border-slate-700 text-xs">
-            <button class="tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${currentFilterType === 'all' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'}" data-filter="all">ทั้งหมด</button>
-            <button class="tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${currentFilterType === 'income' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'}" data-filter="income">รายรับ</button>
-            <button class="tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${currentFilterType === 'expense' ? 'bg-purple-600 text-white font-medium' : 'text-slate-400 hover:text-white'}" data-filter="expense">รายจ่าย</button>
+            <button class="tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${currentFilterType === 'all' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}" data-filter="all">ทั้งหมด</button>
+            <button class="tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${currentFilterType === 'income' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}" data-filter="income">รายรับ</button>
+            <button class="tx-filter-btn px-3 py-1.5 rounded-lg transition-all ${currentFilterType === 'expense' ? 'bg-purple-600 text-white font-medium shadow-md shadow-purple-600/30' : 'text-slate-400 hover:text-white'}" data-filter="expense">รายจ่าย</button>
           </div>
 
-          <!-- Category Selector -->
           <select id="tx-cat-select" class="bg-slate-900/80 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-purple-500">
             <option value="all">ทุกหมวดหมู่</option>
             ${categories.map(c => `<option value="${c}" ${currentCategory === c ? 'selected' : ''}>${c}</option>`).join('')}
@@ -135,7 +128,7 @@ export function renderFinance(container) {
       </div>
 
       <!-- Transaction History Table / Cards -->
-      <div class="glass-panel overflow-hidden">
+      <div class="glass-panel overflow-hidden stagger-item stagger-5">
         <div class="p-4 border-b border-slate-800/80 flex items-center justify-between">
           <span class="font-semibold text-white text-sm">ประวัติธุรกรรมทั้งหมด (${txs.length} รายการ)</span>
           <span class="text-xs text-slate-400">บันทึกวันและเวลาอย่างละเอียด</span>
@@ -152,7 +145,7 @@ export function renderFinance(container) {
             const iconBg = isInc ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30';
             const iconName = isInc ? 'arrow-down-left' : 'arrow-up-right';
             return `
-              <div class="p-4 hover:bg-slate-800/30 transition-colors flex items-center justify-between gap-4">
+              <div class="p-4 hover:bg-slate-800/30 transition-all duration-200 hover:translate-x-1 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3.5 min-w-0">
                   <div class="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
                     <i data-lucide="${iconName}" class="w-5 h-5"></i>
@@ -192,6 +185,12 @@ export function renderFinance(container) {
     window.lucide.createIcons({ root: container });
   }
 
+  // 5. Trigger Number Count-Up Animations
+  animateCounter(container.querySelector('#finance-total-income'), metrics.totalIncome, 1200, '฿ ');
+  animateCounter(container.querySelector('#finance-total-expense'), metrics.totalExpense, 1200, '฿ ');
+  animateCounter(container.querySelector('#finance-net-balance'), metrics.balance, 1200, '฿ ');
+  animateCounter(container.querySelector('#finance-savings-rate'), savingsRate, 1200, '', '%');
+
   bindFinanceEvents(container);
   initFinanceCharts();
 }
@@ -224,6 +223,10 @@ function initFinanceCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 1500,
+        easing: 'easeInOutQuart'
+      },
       plugins: {
         legend: {
           position: 'top',
@@ -245,12 +248,10 @@ function initFinanceCharts() {
 }
 
 function bindFinanceEvents(container) {
-  // Add Tx modal
   container.querySelector('#btn-add-tx')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('open-modal', { detail: { modal: 'add-transaction' } }));
   });
 
-  // Type Filter Tabs
   container.querySelectorAll('.tx-filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       currentFilterType = e.currentTarget.getAttribute('data-filter');
@@ -258,19 +259,16 @@ function bindFinanceEvents(container) {
     });
   });
 
-  // Category select
   container.querySelector('#tx-cat-select')?.addEventListener('change', (e) => {
     currentCategory = e.target.value;
     renderFinance(container);
   });
 
-  // Search input
   container.querySelector('#tx-search-input')?.addEventListener('input', (e) => {
     currentSearch = e.target.value;
     renderFinance(container);
   });
 
-  // Delete transaction
   container.querySelectorAll('.btn-delete-tx').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id = e.currentTarget.getAttribute('data-id');
@@ -280,7 +278,6 @@ function bindFinanceEvents(container) {
     });
   });
 
-  // Export CSV
   container.querySelector('#btn-export-csv')?.addEventListener('click', () => {
     const txs = state.data.transactions;
     let csv = 'ID,Type,Title,Amount,Category,Date,Note\n';

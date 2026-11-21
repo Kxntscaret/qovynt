@@ -31,6 +31,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ==========================================================================
+   1. Animated Ambient Gradient Background
+   ========================================================================== */
 body {
   font-family: 'Prompt', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-base);
@@ -38,10 +41,89 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   line-height: 1.5;
-  background-image: 
-    radial-gradient(circle at 15% 10%, rgba(124, 58, 237, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 90%, rgba(6, 182, 212, 0.06) 0%, transparent 45%);
-  background-attachment: fixed;
+  position: relative;
+}
+
+/* Background animated gradient orbs */
+.bg-ambient-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.45;
+  will-change: transform;
+}
+
+.ambient-blob-1 {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, rgba(99, 102, 241, 0.1) 60%, transparent 80%);
+  top: -100px;
+  left: 10%;
+  animation: floatAmbient1 24s ease-in-out infinite alternate;
+}
+
+.ambient-blob-2 {
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(139, 92, 246, 0.08) 60%, transparent 80%);
+  bottom: -150px;
+  right: 5%;
+  animation: floatAmbient2 28s ease-in-out infinite alternate;
+}
+
+.ambient-blob-3 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.18) 0%, rgba(124, 58, 237, 0.05) 60%, transparent 80%);
+  top: 40%;
+  left: 35%;
+  animation: floatAmbient3 20s ease-in-out infinite alternate;
+}
+
+@keyframes floatAmbient1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(60px, 80px, 0) scale(1.12); }
+  100% { transform: translate3d(-40px, 40px, 0) scale(0.95); }
+}
+
+@keyframes floatAmbient2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-70px, -90px, 0) scale(1.15); }
+  100% { transform: translate3d(50px, -40px, 0) scale(0.92); }
+}
+
+@keyframes floatAmbient3 {
+  0% { transform: translate3d(0, 0, 0) scale(0.9); opacity: 0.3; }
+  50% { transform: translate3d(80px, -50px, 0) scale(1.1); opacity: 0.55; }
+  100% { transform: translate3d(-60px, 60px, 0) scale(1); opacity: 0.35; }
+}
+
+/* ==========================================================================
+   7. Interactive Cursor Glow Spotlight
+   ========================================================================== */
+#cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 500px;
+  height: 500px;
+  margin-top: -250px;
+  margin-left: -250px;
+  background: radial-gradient(circle 250px at center, rgba(139, 92, 246, 0.12), rgba(6, 182, 212, 0.05), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  will-change: transform;
 }
 
 /* Custom Sleek Scrollbar */
@@ -60,99 +142,27 @@ body {
   background: rgba(168, 85, 247, 0.5);
 }
 
-/* Glassmorphism utility classes */
+/* ==========================================================================
+   4. Cards Floating & Glassmorphism
+   ========================================================================== */
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease;
+  position: relative;
+  z-index: 2;
 }
 
 .glass-panel-hover:hover {
   border-color: var(--border-active);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px var(--primary-glow);
-  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 24px -4px var(--primary-glow);
+  transform: translateY(-4px);
 }
 
-.glass-dropdown {
-  background: rgba(20, 23, 46, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-}
-
-/* Glow effects */
-.glow-purple {
-  box-shadow: 0 0 20px -3px var(--primary-glow);
-}
-.glow-green {
-  box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.35);
-}
-.glow-rose {
-  box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.35);
-}
-.glow-cyan {
-  box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.35);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-
-@keyframes modalScale {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-modal-pop {
-  animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Sidebar navigation item styling */
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.92rem;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-  user-select: none;
-  position: relative;
-  text-decoration: none;
-}
-
-.nav-item:hover {
-  color: #ffffff;
-  background: rgba(147, 130, 245, 0.08);
-}
-
-.nav-item.active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-  box-shadow: 0 4px 16px -2px rgba(124, 58, 237, 0.5);
-  font-weight: 600;
-}
-
-/* Quick Access shortcut button */
+/* Quick Action button hover float */
 .quick-action-btn {
   background: rgba(26, 29, 56, 0.7);
   border: 1px solid var(--border-subtle);
@@ -164,22 +174,130 @@ body {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
 }
 
 .quick-action-btn:hover {
   background: rgba(35, 39, 74, 0.9);
   border-color: var(--border-active);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(124, 58, 237, 0.25);
 }
 
 .quick-action-btn i {
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .quick-action-btn:hover i {
-  transform: scale(1.15);
+  transform: scale(1.18);
+}
+
+/* ==========================================================================
+   2. Page Entrance Fade In & Stagger Animations
+   ========================================================================== */
+@keyframes dashboardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: dashboardEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger entrance utility for cards */
+.stagger-item {
+  animation: dashboardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* ==========================================================================
+   3. Sidebar Navigation Smooth Transition
+   ========================================================================== */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-item i {
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.nav-item:hover {
+  color: #ffffff;
+  background: rgba(147, 130, 245, 0.1);
+  transform: translateX(4px);
+}
+
+.nav-item:hover i {
+  transform: scale(1.12);
+  color: #c084fc;
+}
+
+.nav-item.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  box-shadow: 0 4px 20px -2px rgba(124, 58, 237, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+  transform: translateX(3px);
+}
+
+.nav-item.active i {
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+/* ==========================================================================
+   6. Calendar Slide Animations
+   ========================================================================== */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.cal-slide-right {
+  animation: slideInFromRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cal-slide-left {
+  animation: slideInFromLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom checkbox styling */
@@ -245,7 +363,7 @@ body {
 .progress-fill {
   height: 100%;
   border-radius: 9999px;
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
 
@@ -263,12 +381,21 @@ body {
   padding: 16px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s ease;
 }
 
 .modal-overlay.active {
   opacity: 1;
   pointer-events: auto;
+}
+
+@keyframes modalScale {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-modal-pop {
+  animation: modalScale 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Toast container */
@@ -297,7 +424,7 @@ body {
   align-items: center;
   gap: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  animation: fadeIn 0.25s ease forwards;
+  animation: dashboardEntrance 0.25s ease forwards;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -328,11 +455,4 @@ body {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
-}
-
-/* Responsive tweaks */
-@media (max-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr !important;
-  }
 }

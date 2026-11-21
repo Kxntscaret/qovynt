@@ -1,10 +1,11 @@
-// 4. Calendar View - Full personal calendar with interactive month grid and day agenda
+// 4. Calendar View - Full personal calendar with interactive month grid and smooth slide transitions
 import { state } from '../state.js';
 import { formatThaiDateFull, formatThaiDateShort, getThaiBuddhistYear, showToast } from '../utils.js';
 
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth(); // 0-11
 let selectedDateStr = new Date().toISOString().slice(0, 10);
+let lastSlideDirection = 'right'; // 'left' or 'right'
 
 const THAI_MONTHS = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -16,9 +17,9 @@ export function renderCalendar(container) {
   const selectedEvents = events.filter(e => e.date === selectedDateStr);
 
   container.innerHTML = `
-    <div class="space-y-6 animate-fade-in pb-12">
+    <div class="space-y-6 pb-12">
       <!-- Calendar Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 stagger-item stagger-1">
         <div>
           <h1 class="text-2xl font-bold text-white flex items-center gap-2">
             <i data-lucide="calendar" class="w-6 h-6 text-purple-400"></i>
@@ -27,10 +28,10 @@ export function renderCalendar(container) {
           <p class="text-xs text-slate-400 mt-1">วางแผนตารางเวลา นัดหมาย และกิจกรรมสำคัญของคุณในแต่ละวัน</p>
         </div>
         <div class="flex items-center gap-2.5">
-          <button id="btn-today-cal" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 text-xs font-medium border border-slate-700 transition-colors">
+          <button id="btn-today-cal" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 text-xs font-medium border border-slate-700 transition-all hover:scale-105">
             วันนี้
           </button>
-          <button id="btn-add-event" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2">
+          <button id="btn-add-event" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all hover:scale-105 flex items-center gap-2">
             <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มกิจกรรม
           </button>
         </div>
@@ -39,17 +40,17 @@ export function renderCalendar(container) {
       <!-- Main Layout: 2 Columns (Calendar 8 cols, Day Agenda 4 cols) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Monthly Grid (8 cols) -->
-        <div class="lg:col-span-8 glass-panel p-6">
+        <div class="lg:col-span-8 glass-panel glass-panel-hover p-6 stagger-item stagger-2 overflow-hidden">
           <!-- Month Controls -->
           <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-800">
             <div class="text-lg font-bold text-white flex items-center gap-2">
               <span id="cal-month-name">${THAI_MONTHS[viewMonth]} ${viewYear + 543}</span>
             </div>
             <div class="flex items-center gap-2">
-              <button id="btn-prev-month" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-300 hover:text-white transition-colors">
+              <button id="btn-prev-month" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-300 hover:text-white transition-all hover:scale-110 active:scale-95" title="เดือนก่อนหน้า">
                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
               </button>
-              <button id="btn-next-month" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-300 hover:text-white transition-colors">
+              <button id="btn-next-month" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-300 hover:text-white transition-all hover:scale-110 active:scale-95" title="เดือนถัดไป">
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
               </button>
             </div>
@@ -66,15 +67,15 @@ export function renderCalendar(container) {
             <span class="text-purple-400">เสาร์</span>
           </div>
 
-          <!-- Days Grid -->
-          <div class="grid grid-cols-7 gap-2" id="full-cal-days">
+          <!-- 6. Days Grid with Slide Animation -->
+          <div class="grid grid-cols-7 gap-2 ${lastSlideDirection === 'right' ? 'cal-slide-right' : 'cal-slide-left'}" id="full-cal-days">
             <!-- Dynamically populated -->
           </div>
         </div>
 
         <!-- Selected Day Agenda (4 cols) -->
         <div class="lg:col-span-4 space-y-6">
-          <div class="glass-panel p-5">
+          <div class="glass-panel glass-panel-hover p-5 stagger-item stagger-3">
             <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
               <div>
                 <span class="text-xs text-slate-400">กำหนดการวันที่</span>
@@ -141,12 +142,10 @@ function buildMonthGrid() {
   const todayDate = today.getDate();
 
   let html = '';
-  // Empty offset days
   for (let i = 0; i < firstDay; i++) {
     html += `<div class="min-h-[80px] p-1.5 rounded-xl bg-slate-900/20 border border-slate-900/40 opacity-40"></div>`;
   }
 
-  // Days
   for (let d = 1; d <= totalDays; d++) {
     const monthStr = String(viewMonth + 1).padStart(2, '0');
     const dayStr = String(d).padStart(2, '0');
@@ -154,17 +153,15 @@ function buildMonthGrid() {
 
     const isToday = isCurrentMonth && d === todayDate;
     const isSelected = selectedDateStr === dateKey;
-
-    // Events on this day
     const dayEvents = events.filter(e => e.date === dateKey);
 
     html += `
       <div 
-        class="cal-day-cell min-h-[80px] p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20' : isToday ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-slate-800/80 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-800/40'}" 
+        class="cal-day-cell min-h-[80px] p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between hover:scale-[1.02] ${isSelected ? 'border-purple-500 bg-purple-500/15 shadow-lg shadow-purple-500/25 ring-1 ring-purple-500/40' : isToday ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-slate-800/80 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-800/40'}" 
         data-date="${dateKey}"
       >
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold ${isToday ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold' : isSelected ? 'text-purple-300 font-bold' : 'text-slate-300'}">
+          <span class="text-xs font-semibold ${isToday ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-600/40' : isSelected ? 'text-purple-300 font-bold' : 'text-slate-300'}">
             ${d}
           </span>
           ${dayEvents.length > 0 ? `
@@ -188,7 +185,6 @@ function buildMonthGrid() {
 
   container.innerHTML = html;
 
-  // Add click to days
   container.querySelectorAll('.cal-day-cell').forEach(cell => {
     cell.addEventListener('click', (e) => {
       selectedDateStr = e.currentTarget.getAttribute('data-date');
@@ -199,7 +195,9 @@ function buildMonthGrid() {
 }
 
 function bindCalendarEvents(container) {
+  // 6. Slide Navigation Animation
   container.querySelector('#btn-prev-month')?.addEventListener('click', () => {
+    lastSlideDirection = 'left';
     viewMonth--;
     if (viewMonth < 0) {
       viewMonth = 11;
@@ -209,6 +207,7 @@ function bindCalendarEvents(container) {
   });
 
   container.querySelector('#btn-next-month')?.addEventListener('click', () => {
+    lastSlideDirection = 'right';
     viewMonth++;
     if (viewMonth > 11) {
       viewMonth = 0;
@@ -218,6 +217,7 @@ function bindCalendarEvents(container) {
   });
 
   container.querySelector('#btn-today-cal')?.addEventListener('click', () => {
+    lastSlideDirection = 'right';
     const now = new Date();
     viewYear = now.getFullYear();
     viewMonth = now.getMonth();

@@ -30,6 +30,7 @@ class Application {
     this.setupHeader();
     this.setupCommandPalette();
     this.setupMobileMenu();
+    this.setupCursorGlow(); // 7. Glowing cursor spotlight
 
     // Listen to reactive state changes
     state.subscribe(() => {
@@ -47,11 +48,54 @@ class Application {
     console.log('QOVYNT Application initialized successfully.');
   }
 
+  // 7. Interactive Cursor Glow Spotlight with Smooth Interpolation
+  setupCursorGlow() {
+    const glowEl = document.getElementById('cursor-glow');
+    if (!glowEl) return;
+
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    let currentX = targetX;
+    let currentY = targetY;
+    let isMoving = false;
+
+    window.addEventListener('mousemove', (e) => {
+      targetX = e.clientX;
+      targetY = e.clientY;
+      if (!isMoving) {
+        glowEl.style.opacity = '1';
+        isMoving = true;
+      }
+    }, { passive: true });
+
+    document.addEventListener('mouseleave', () => {
+      glowEl.style.opacity = '0';
+      isMoving = false;
+    });
+
+    // 60FPS Lerp loop
+    function renderGlow() {
+      // Smooth linear interpolation (lerp 0.15)
+      currentX += (targetX - currentX) * 0.18;
+      currentY += (targetY - currentY) * 0.18;
+
+      glowEl.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+      requestAnimationFrame(renderGlow);
+    }
+
+    requestAnimationFrame(renderGlow);
+  }
+
   renderCurrentView() {
     if (!this.viewContainer) return;
     const view = state.currentView;
 
-    // Highlight active sidebar item
+    // Reset and trigger entrance animation (2. เปิดเว็บไซต์ Dashboard ค่อย ๆ Fade in)
+    this.viewContainer.classList.remove('animate-fade-in');
+    void this.viewContainer.offsetWidth; // Trigger reflow
+    this.viewContainer.classList.add('animate-fade-in');
+
+    // 3. Highlight active sidebar item with smooth transition
     document.querySelectorAll('.nav-item').forEach(el => {
       const target = el.getAttribute('data-view');
       if (target === view) {
@@ -232,10 +276,7 @@ class Application {
       ];
 
       const matchingViews = views.filter(v => v.name.toLowerCase().includes(q));
-
-      // Match tasks
       const matchingTasks = state.data.tasks.filter(t => t.title.toLowerCase().includes(q)).slice(0, 3);
-      // Match notes
       const matchingNotes = state.data.notes.filter(n => n.title.toLowerCase().includes(q)).slice(0, 3);
 
       let html = '';
@@ -288,7 +329,6 @@ class Application {
         window.lucide.createIcons({ root: resultsContainer });
       }
 
-      // Bind click
       resultsContainer.querySelectorAll('.palette-item').forEach(item => {
         item.addEventListener('click', () => {
           const v = item.getAttribute('data-view');
