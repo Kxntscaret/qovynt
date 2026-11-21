@@ -325,8 +325,8 @@ class DatabaseManager {
   }
 
   initSupabase() {
-    const url = localStorage.getItem('qovynt_supabase_url') || CONFIG.SUPABASE.URL;
-    const key = localStorage.getItem('qovynt_supabase_key') || CONFIG.SUPABASE.ANON_KEY;
+    const url = CONFIG.SUPABASE.URL || localStorage.getItem('qovynt_supabase_url');
+    const key = CONFIG.SUPABASE.ANON_KEY || localStorage.getItem('qovynt_supabase_key');
 
     if (window.supabase && url && key) {
       try {

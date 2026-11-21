@@ -6,9 +6,9 @@ export const CONFIG = {
   DEFAULT_CURRENCY: '฿',
   STORAGE_KEY_PREFIX: 'qovynt_',
   SUPABASE: {
-    // Users can override this via UI Settings or this file
-    URL: localStorage.getItem('qovynt_supabase_url') || '',
-    ANON_KEY: localStorage.getItem('qovynt_supabase_key') || ''
+    // Central Cloud Database & Google Auth Configuration for all users
+    URL: 'https://iijwrzybntpdybmcpggn.supabase.co',
+    ANON_KEY: 'sb_publishable_XfY-F4B85h1jX20e-N_5rg_iyWEmsge'
   },
   THEMES: {
     DARK: 'dark',
