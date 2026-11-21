@@ -6,16 +6,16 @@ import { setupModals, showConfirmDialog } from './modals.js';
 import { formatThaiDateFull, getDynamicGreeting, showToast, playAudioFeedback } from './utils.js';
 
 // Import Views
-import { renderOverview } from './views/overview.js';
-import { renderFinance } from './views/finance.js';
-import { renderTasks } from './views/tasks.js';
-import { renderCalendar } from './views/calendar.js';
-import { renderGoals } from './views/goals.js';
-import { renderNotes } from './views/notes.js';
-import { renderProjects } from './views/projects.js';
-import { renderHabits } from './views/habits.js';
-import { renderSettings } from './views/settings.js';
-import { renderAuth } from './views/auth-view.js';
+import { renderOverview } from './views/overview.js?v=20261121_03';
+import { renderFinance } from './views/finance.js?v=20261121_03';
+import { renderTasks } from './views/tasks.js?v=20261121_03';
+import { renderCalendar } from './views/calendar.js?v=20261121_03';
+import { renderGoals } from './views/goals.js?v=20261121_03';
+import { renderNotes } from './views/notes.js?v=20261121_03';
+import { renderProjects } from './views/projects.js?v=20261121_03';
+import { renderHabits } from './views/habits.js?v=20261121_03';
+import { renderSettings } from './views/settings.js?v=20261121_03';
+import { renderAuth } from './views/auth-view.js?v=20261121_03';
 
 // Helper to safely trigger Lucide icon rendering across the entire document
 export function refreshIcons(root = document.body) {

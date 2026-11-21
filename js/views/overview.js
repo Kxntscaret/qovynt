@@ -1,7 +1,7 @@
 // 1. Overview Page View - Faithful, high-fidelity implementation with 7 Core Animations
 import { state } from '../state.js';
 import { formatMoney, formatThaiDateShort, formatThaiDateTime, triggerConfetti, animateCounter } from '../utils.js';
-import { filterFinanceByDate } from './finance.js';
+import { filterFinanceByDate } from './finance.js?v=20261121_03';
 
 let financeLineChart = null;
 let expenseDonutChart = null;
