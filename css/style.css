@@ -241,10 +241,12 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(124, 58, 237, 0.25);
 }
 
-.quick-action-btn i {
+.quick-action-btn i,
+.quick-action-btn svg {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.quick-action-btn:hover i {
+.quick-action-btn:hover i,
+.quick-action-btn:hover svg {
   transform: scale(1.18);
 }
 
@@ -294,7 +296,8 @@ body {
   text-decoration: none;
 }
 
-.nav-item i {
+.nav-item i,
+.nav-item svg {
   transition: transform 0.25s ease, color 0.25s ease;
 }
 
@@ -304,7 +307,8 @@ body {
   transform: translateX(4px);
 }
 
-.nav-item:hover i {
+.nav-item:hover i,
+.nav-item:hover svg {
   transform: scale(1.12);
   color: #c084fc;
 }
@@ -317,7 +321,8 @@ body {
   transform: translateX(3px);
 }
 
-.nav-item.active i {
+.nav-item.active i,
+.nav-item.active svg {
   color: #ffffff;
   transform: scale(1.08);
 }

@@ -3,6 +3,21 @@ import { state } from '../state.js';
 import { triggerConfetti, showToast } from '../utils.js';
 import { showConfirmDialog } from '../modals.js';
 
+// Helper to map project title to rich icon badge
+function getProjectMeta(p) {
+  const title = (p.title || '').toLowerCase();
+  if (title.includes('web') || title.includes('ui') || title.includes('site')) {
+    return { icon: 'layout', bg: 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30' };
+  }
+  if (title.includes('study') || title.includes('track') || title.includes('เรียน')) {
+    return { icon: 'book-open', bg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+  }
+  if (title.includes('game') || title.includes('เกม')) {
+    return { icon: 'gamepad-2', bg: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
+  }
+  return { icon: 'folder-git-2', bg: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' };
+}
+
 export function renderProjects(container) {
   const projects = state.data.projects;
   const avgProgress = projects.length > 0 
@@ -60,13 +75,20 @@ export function renderProjects(container) {
 
       <!-- Projects Grid Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-item stagger-3">
-        ${projects.map(p => `
+        ${projects.map(p => {
+          const pMeta = getProjectMeta(p);
+          return `
           <div class="glass-panel glass-panel-hover p-5 flex flex-col justify-between space-y-4 group">
             <div>
               <div class="flex items-start justify-between gap-2 mb-2">
-                <div>
-                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-purple-300 font-medium">${p.category || 'Development'}</span>
-                  <h3 class="text-base font-bold text-white group-hover:text-purple-300 transition-colors mt-1.5">${p.title}</h3>
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${pMeta.bg}">
+                    <i data-lucide="${pMeta.icon}" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-purple-300 font-medium">${p.category || 'Development'}</span>
+                    <h3 class="text-base font-bold text-white group-hover:text-purple-300 transition-colors mt-0.5">${p.title}</h3>
+                  </div>
                 </div>
                 <span class="text-[10px] px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 font-semibold shrink-0">
                   ${p.stage}
@@ -95,7 +117,8 @@ export function renderProjects(container) {
               </button>
             </div>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
     </div>
   `;

@@ -17,6 +17,17 @@ import { renderHabits } from './views/habits.js';
 import { renderSettings } from './views/settings.js';
 import { renderAuth } from './views/auth-view.js';
 
+// Helper to safely trigger Lucide icon rendering across the entire document
+export function refreshIcons(root = document.body) {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    try {
+      window.lucide.createIcons({ root });
+    } catch (e) {
+      console.warn('Lucide icon refresh:', e);
+    }
+  }
+}
+
 class Application {
   constructor() {
     this.viewContainer = null;
@@ -54,6 +65,7 @@ class Application {
       state.setView('auth');
     }
 
+    refreshIcons();
     console.log('QOVYNT Application initialized successfully.');
   }
 
@@ -178,6 +190,8 @@ class Application {
         renderOverview(this.viewContainer);
         break;
     }
+
+    refreshIcons();
   }
 
   setupNavigation() {
@@ -221,6 +235,13 @@ class Application {
     const chevronIcon = document.getElementById('header-user-chevron');
     const notifBtn = document.getElementById('btn-notifications');
     const notifDropdown = document.getElementById('notifications-dropdown');
+    const themeBtn = document.getElementById('btn-theme-toggle');
+
+    // Theme Toggle Button
+    themeBtn?.addEventListener('click', () => {
+      playAudioFeedback('pop');
+      showToast('โหมดการแสดงผล', 'คุณกำลังใช้งานธีม Cyber Dark Violet (ความคมชัดระดับพรีเมียม)', 'info');
+    });
 
     // Toggle User Profile Dropdown Popup (Settings & Logout)
     userBtn?.addEventListener('click', (e) => {
@@ -247,6 +268,27 @@ class Application {
       userDropdown?.classList.add('hidden');
       if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
       state.setView('settings');
+    });
+
+    // Dropdown Database Button
+    document.getElementById('dropdown-btn-database')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown?.classList.add('hidden');
+      if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+      state.setView('settings');
+      setTimeout(() => {
+        const dbCard = document.querySelector('[data-card="database"]');
+        if (dbCard) dbCard.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    });
+
+    // Dropdown Theme Button
+    document.getElementById('dropdown-btn-theme')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userDropdown?.classList.add('hidden');
+      if (chevronIcon) chevronIcon.style.transform = 'rotate(0deg)';
+      playAudioFeedback('pop');
+      showToast('ธีมการแสดงผล', 'Cyber Dark Violet — แสงนีออนและ Glassmorphism เปิดใช้งานอยู่', 'info');
     });
 
     // Dropdown Logout Button (Decision Dialog)
@@ -306,15 +348,18 @@ class Application {
     const nameEl = document.getElementById('header-user-name');
     const userRoleEl = document.getElementById('header-user-role');
     const dropdownNameEl = document.getElementById('dropdown-user-name');
+    const dropdownRoleEl = document.getElementById('dropdown-user-role');
     const dropdownEmailEl = document.getElementById('dropdown-user-email');
     const logoutBtn = document.getElementById('nav-logout');
 
     if (user) {
       const avatarUrl = user.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(user.email || user.name)}`;
+      const roleText = user.provider === 'google' ? 'Google Account' : 'Verified Member';
       if (avatarEl) avatarEl.src = avatarUrl;
       if (nameEl) nameEl.textContent = user.name || 'คุณ';
-      if (userRoleEl) userRoleEl.textContent = user.provider === 'google' ? 'Google Account' : 'Verified Member';
+      if (userRoleEl) userRoleEl.textContent = roleText;
       if (dropdownNameEl) dropdownNameEl.textContent = user.name || 'คุณ';
+      if (dropdownRoleEl) dropdownRoleEl.textContent = roleText;
       if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || 'user@example.com';
       if (logoutBtn) logoutBtn.classList.remove('hidden');
     } else {
@@ -322,6 +367,7 @@ class Application {
       if (nameEl) nameEl.textContent = 'เข้าสู่ระบบ';
       if (userRoleEl) userRoleEl.textContent = 'ยังไม่ได้ล็อกอิน';
       if (dropdownNameEl) dropdownNameEl.textContent = 'ยังไม่ได้ล็อกอิน';
+      if (dropdownRoleEl) dropdownRoleEl.textContent = 'ยังไม่ได้ล็อกอิน';
       if (dropdownEmailEl) dropdownEmailEl.textContent = 'กรุณาเข้าสู่ระบบ';
       if (logoutBtn) logoutBtn.classList.add('hidden');
     }

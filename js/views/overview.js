@@ -6,6 +6,44 @@ let financeLineChart = null;
 let expenseDonutChart = null;
 let currentTxTab = 'all';
 
+// Helper to map category to realistic rich icon & palette matching MyLife reference
+function getTxCategoryMeta(category, type) {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('อาหาร') || cat.includes('ข้าว') || cat.includes('กิน') || cat.includes('food')) {
+    return { icon: 'utensils', bg: 'bg-rose-500/15 text-rose-400 border-rose-500/30' };
+  }
+  if (cat.includes('ครอบครัว') || cat.includes('เงินเดือน') || cat.includes('รายรับ') || type === 'income') {
+    return { icon: 'wallet', bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
+  }
+  if (cat.includes('เดิน') || cat.includes('รถ') || cat.includes('travel') || cat.includes('bus')) {
+    return { icon: 'bus', bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+  }
+  if (cat.includes('ช้อป') || cat.includes('ซื้อ') || cat.includes('ของใช้') || cat.includes('shop')) {
+    return { icon: 'shopping-bag', bg: 'bg-orange-500/15 text-orange-400 border-orange-500/30' };
+  }
+  if (cat.includes('เน็ต') || cat.includes('บิล') || cat.includes('wifi') || cat.includes('เน็ตบ้าน')) {
+    return { icon: 'wifi', bg: 'bg-purple-500/15 text-purple-400 border-purple-500/30' };
+  }
+  return type === 'income' 
+    ? { icon: 'arrow-down-left', bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' }
+    : { icon: 'arrow-up-right', bg: 'bg-rose-500/15 text-rose-400 border-rose-500/30' };
+}
+
+// Helper to map project title to rich icon badge matching MyLife reference
+function getProjectMeta(p) {
+  const title = (p.title || '').toLowerCase();
+  if (title.includes('web') || title.includes('ui') || title.includes('site')) {
+    return { icon: 'layout', bg: 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30' };
+  }
+  if (title.includes('study') || title.includes('track') || title.includes('เรียน')) {
+    return { icon: 'book-open', bg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' };
+  }
+  if (title.includes('game') || title.includes('เกม')) {
+    return { icon: 'gamepad-2', bg: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
+  }
+  return { icon: 'folder-git-2', bg: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' };
+}
+
 export function renderOverview(container) {
   const metrics = state.getFinancialMetrics();
   const tasks = state.data.tasks.slice(0, 5);
@@ -178,13 +216,12 @@ export function renderOverview(container) {
                     <div class="text-center py-6 text-slate-400 text-xs">ไม่มีรายการในหมวดนี้</div>
                   ` : recentTxs.map(tx => {
                     const isInc = tx.type === 'income';
-                    const iconName = isInc ? 'arrow-down-left' : 'arrow-up-right';
-                    const iconBg = isInc ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+                    const meta = getTxCategoryMeta(tx.category, tx.type);
                     return `
                       <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/40 transition-all duration-200 hover:translate-x-1">
                         <div class="flex items-center gap-3">
-                          <div class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}">
-                            <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                          <div class="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${meta.bg}">
+                            <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
                           </div>
                           <div>
                             <div class="text-xs font-medium text-white">${tx.title}</div>
@@ -259,21 +296,31 @@ export function renderOverview(container) {
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              ${projects.map(p => `
-                <div class="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-1 group">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors">${p.title}</span>
-                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">${p.stage}</span>
+              ${projects.map(p => {
+                const pMeta = getProjectMeta(p);
+                return `
+                  <div class="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800/80 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-1 group">
+                    <div class="flex items-center gap-2.5 mb-2.5">
+                      <div class="w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${pMeta.bg}">
+                        <i data-lucide="${pMeta.icon}" class="w-4 h-4"></i>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors truncate">${p.title}</span>
+                          <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 shrink-0 ml-1">${p.stage}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="progress-track mb-2">
+                      <div class="progress-fill bg-gradient-to-r from-indigo-500 to-purple-500" style="width: ${p.progress}%;"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] text-slate-400">
+                      <span>ความคืบหน้า</span>
+                      <span class="font-bold text-slate-300">${p.progress}%</span>
+                    </div>
                   </div>
-                  <div class="progress-track mb-2">
-                    <div class="progress-fill bg-gradient-to-r from-indigo-500 to-purple-500" style="width: ${p.progress}%;"></div>
-                  </div>
-                  <div class="flex justify-between items-center text-[10px] text-slate-400">
-                    <span>ความคืบหน้า</span>
-                    <span class="font-bold text-slate-300">${p.progress}%</span>
-                  </div>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
           </div>
 
@@ -410,8 +457,9 @@ export function renderOverview(container) {
     </div>
   `;
 
-  if (window.lucide) {
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
     window.lucide.createIcons({ root: container });
+    window.lucide.createIcons();
   }
 
   // 5. Trigger Number Count-Up Animations
