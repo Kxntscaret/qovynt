@@ -15,7 +15,6 @@ export class BootSequence {
     this.progressPct = document.getElementById('boot-progress-pct');
 
     this.isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.hasBooted = sessionStorage.getItem('qovynt_boot_sequence') === 'completed';
     this.currentProgress = 0;
     this.particles = [];
     this.animId = null;
@@ -23,16 +22,15 @@ export class BootSequence {
   }
 
   shouldRun() {
-    return !this.hasBooted && this.overlay;
+    return Boolean(this.overlay);
   }
 
-  // Fast-path bypass for subsequent visits in the same session
+  // Fast-path bypass
   bypass() {
     if (this.overlay) {
       this.overlay.style.display = 'none';
       this.overlay.remove();
     }
-    document.documentElement.classList.add('skip-boot');
   }
 
   async run(onAppInit) {
@@ -141,8 +139,7 @@ export class BootSequence {
   }
 
   markComplete() {
-    sessionStorage.setItem('qovynt_boot_sequence', 'completed');
-    document.documentElement.classList.add('skip-boot');
+    // Allow intro to play every time on reload as requested
   }
 
   wait(ms) {
